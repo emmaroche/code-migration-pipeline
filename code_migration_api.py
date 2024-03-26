@@ -36,10 +36,18 @@ def code_migration():
     # Invoke the chain to convert the code 
     converted_code = chain.invoke({"question": prompt_data, "answer": code_to_convert})
 
+    # Extracting content based on the type of the converted_code object
+    if isinstance(converted_code, str):  # If converted_code is a string
+        converted_content = converted_code.strip()
+    elif hasattr(converted_code, 'content'):  # If converted_code has 'content' attribute
+        converted_content = converted_code.content.strip()
+    else:
+        return jsonify({"error": "Unable to extract converted code"}), 500
+
     # Construct response
     response = {
         "original_code": code_to_convert.strip(),
-        "converted_code": converted_code.strip(),
+        "converted_code": converted_content,
         "model_used": model_name  
     }
 

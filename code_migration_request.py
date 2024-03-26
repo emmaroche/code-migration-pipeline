@@ -5,7 +5,7 @@ api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
 # Define the prompt and model name
 prompt = "Can you help me migrate/convert this Javascript code to Typescript?"
-model_name = "vertexai_gemini_pro" 
+model_name = "openai" 
 
 # Path to the file containing the code to convert
 file_path = r"C:\Users\EmmaR\Downloads\johnrellis-users-api-master\routes\v1\transformIdOutgoing.js" 
