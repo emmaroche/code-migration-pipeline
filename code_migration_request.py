@@ -4,7 +4,7 @@ import requests
 api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
 # Define the prompt and model name
-prompt = "Can you help me migrate/convert this Javascript code to Typescript?"
+prompt = "Can you help me migrate/convert this Javascript code to Python?"
 model_name = "openai" 
 
 # Path to the file containing the code to convert
