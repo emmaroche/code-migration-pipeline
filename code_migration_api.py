@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from langchain_core.prompts import PromptTemplate
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_google_vertexai import VertexAI
+from langchain_community.llms import Ollama
 
 app = Flask(__name__)
 
@@ -11,18 +12,22 @@ MODELS = {
     "vertexai_text_bison": VertexAI(model_name="text-bison"),
     "vertexai_gemini_pro": VertexAI(model_name="gemini-pro"),
     "vertexai_code_bison": VertexAI(model_name="code-bison"),
+    "ollama_llama3": Ollama(model="llama3"),
+    "ollama_llama2": Ollama(model="llama2"),
+    "ollama_codellama": Ollama(model="codellama"),
+    "ollama_codegemma": Ollama(model="codegemma")
 }
 
 @app.route('/code-migration', methods=['POST'])
 def code_migration():
     # Parse request data
     request_data = request.json
-    model_name = request_data.get('model')
+    selected_model = request_data.get('model')
     prompt_data = request_data.get('prompt')
     code_to_convert = request_data.get('code')
 
-    # Initialise the model based on the model name above
-    model = MODELS.get(model_name)
+    # Initialise the model based on the selected model name above
+    model = MODELS.get(selected_model)
     if model is None:
         return jsonify({"error": "Invalid model name"}), 400
 
@@ -48,7 +53,7 @@ def code_migration():
     response = {
         "original_code": code_to_convert.strip(),
         "converted_code": converted_content,
-        "model_used": model_name  
+        "model_used": selected_model  
     }
 
     return jsonify(response)
