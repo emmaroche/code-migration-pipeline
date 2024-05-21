@@ -8,14 +8,16 @@ app = Flask(__name__)
 
 # AI Models
 MODELS = {
-    "openai": ChatOpenAI(),
-    "vertexai_text_bison": VertexAI(model_name="text-bison"),
-    "vertexai_gemini_pro": VertexAI(model_name="gemini-pro"),
-    "vertexai_code_bison": VertexAI(model_name="code-bison"),
-    "ollama_llama3": Ollama(model="llama3"),
-    "ollama_llama2": Ollama(model="llama2"),
-    "ollama_codellama": Ollama(model="codellama"),
-    "ollama_codegemma": Ollama(model="codegemma")
+    "OpenAI - GPT-3.5 Turbo": ChatOpenAI(model_name="gpt-3.5-turbo-0125"),
+    "OpenAI - GPT-4o": ChatOpenAI(model_name="gpt-4o"),
+    "OpenAI - GPT-4 Turbo": ChatOpenAI(model_name="gpt-4-turbo"),
+    "VertexAI - Gemini Pro": VertexAI(model_name="gemini-pro"),
+    "VertexAI - PaLM 2": VertexAI(model_name="text-bison"),
+    "VertexAI - Codey": VertexAI(model_name="code-bison"),
+    "Ollama - Llama 3": Ollama(model="llama3"),
+    "Ollama - Llama 2": Ollama(model="llama2"),
+    "Ollama - CodeLlama": Ollama(model="codellama"),
+    "Ollama - CodeGemma": Ollama(model="codegemma")
 }
 
 @app.route('/code-migration', methods=['POST'])

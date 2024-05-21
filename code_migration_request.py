@@ -1,16 +1,15 @@
 import requests
-from langchain_core.prompts import PromptTemplate
 
 # API endpoint 
 api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
 # Define the prompt and selected model name
 prompt = (
-    "Can you help me migrate this Javascript code to Python?"
+    "Can you help to migrate this Javascript code to Python?"
     + ", make sure it follows correct Python Coding conventions"
 )
 # prompt = "Can you help me migrate this Javascript code to Python?"
-selected_model = "openai" 
+selected_model = "VertexAI - Gemini Pro" 
 
 # Path to the file containing the code to convert
 file_path = r"C:\Users\EmmaR\Downloads\johnrellis-users-api-master\routes\v1\transformIdOutgoing.js" 
