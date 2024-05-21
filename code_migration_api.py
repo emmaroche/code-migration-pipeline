@@ -11,13 +11,14 @@ MODELS = {
     "OpenAI - GPT-3.5 Turbo": ChatOpenAI(model_name="gpt-3.5-turbo-0125"),
     "OpenAI - GPT-4o": ChatOpenAI(model_name="gpt-4o"),
     "OpenAI - GPT-4 Turbo": ChatOpenAI(model_name="gpt-4-turbo"),
-    "VertexAI - Gemini Pro": VertexAI(model_name="gemini-pro"),
-    "VertexAI - PaLM 2": VertexAI(model_name="text-bison"),
-    "VertexAI - Codey": VertexAI(model_name="code-bison"),
     "Ollama - Llama 3": Ollama(model="llama3"),
     "Ollama - Llama 2": Ollama(model="llama2"),
     "Ollama - CodeLlama": Ollama(model="codellama"),
-    "Ollama - CodeGemma": Ollama(model="codegemma")
+    "Ollama - CodeGemma": Ollama(model="codegemma"),
+    "VertexAI - Gemini Pro": VertexAI(model_name="gemini-pro"),
+    # Max Token specification added, as the responses are cut short without it for the PaLM 2 and Codey models only
+    "VertexAI - PaLM 2": VertexAI(model_name="text-bison", max_output_tokens=1024),
+    "VertexAI - Codey": VertexAI(model_name="code-bison", max_output_tokens=1024)
 }
 
 @app.route('/code-migration', methods=['POST'])

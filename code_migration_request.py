@@ -9,7 +9,7 @@ prompt = (
     + ", make sure it follows correct Python Coding conventions"
 )
 # prompt = "Can you help me migrate this Javascript code to Python?"
-selected_model = "VertexAI - Gemini Pro" 
+selected_model = "VertexAI - PaLM 2" 
 
 # Path to the file containing the code to convert
 file_path = r"C:\Users\EmmaR\Downloads\johnrellis-users-api-master\routes\v1\transformIdOutgoing.js" 
