@@ -1,10 +1,10 @@
 # Code Migration Pipeline
 
-This repository contains the code for my dissertation's code migration pipeline. The pipeline facilitates the migration of code using large language models provided by OpenAI and VertexAI.
+This repository contains the code for my dissertation's Code Migration Pipeline. The pipeline facilitates the migration of code using generative AI / large language models provided by OpenAI, VertexAI and Ollama.
 
 ## Current Features
 
-- **Code Migration**: Facilitates migration of code between different programming languages (e.g. Java to Kotlin, Javascript to Python, etc)
+- **Code Migration**: Facilitates migration of code between different programming languages (e.g. Javascript to Python, Java to Kotlin etc)
 
 - **Model Integration**: Incorporates AI models developed by OpenAI, VertexAI, and Ollama (e.g., GPT-3.5 Turbo, Gemini Pro, Llama 3, etc.)
 

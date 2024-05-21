@@ -5,13 +5,12 @@ api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
 # Define the prompt and selected model name
 prompt = (
-    "Can you help to migrate this Javascript code to Python?"
+    "Can you help to migrate this JavaScript code to Python?"
     + ", make sure it follows correct Python Coding conventions"
 )
-# prompt = "Can you help me migrate this Javascript code to Python?"
 selected_model = "VertexAI - PaLM 2" 
 
-# Path to the file containing the code to convert
+# Path to the file containing the code to convert (JavaScript)
 file_path = r"C:\Users\EmmaR\Downloads\johnrellis-users-api-master\routes\v1\transformIdOutgoing.js" 
 
 # Read the code from the file
