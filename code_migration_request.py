@@ -3,19 +3,36 @@ import requests
 # API endpoint 
 api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
+# Define the source and target languages
+source_language = "Objective-C"
+target_language = "Swift"
+
+# GitHub repository and file path
+github_repo = "emmaroche/data-preparation"
+github_file_path = "code-artefacts/objective-c/Objective-C-Examples-master/ActionSheet/ActionSheet/ViewController.m"
+
+# Construct the raw URL
+raw_url = f"https://raw.githubusercontent.com/{github_repo}/master/{github_file_path}"
+
+# Download the file content from GitHub
+response = requests.get(raw_url)
+if response.status_code == 200:
+    code_to_convert = response.text
+else:
+    raise Exception(f"Failed to download the file from GitHub. Status code: {response.status_code}")
+
 # Define the prompt and selected model name
 prompt = (
-    "Can you help to migrate this JavaScript code to Python?"
-    + ", make sure it follows correct Python Coding conventions"
+    f"Migrate the provided {source_language} code to {target_language}, ensuring compatibility and functionality."
+    "\n\n"
+    f"Replace language-specific syntax and constructs with equivalents in {target_language}, maintaining code integrity."
+    f" Ensure compliance with {target_language}'s type system, idiomatic practices, and coding conventions for optimal performance."
+    f" Ensure compatibility and equivalent functionality when migrating from any frameworks identified as being used to a similar framework in {target_language}."
+    f" Refactor the code to leverage {target_language}'s features and best practices, enhancing maintainability and efficiency."
+    " Provide only the migrated code without any explanations or comments."
 )
-selected_model = "VertexAI - PaLM 2" 
 
-# Path to the file containing the code to convert (JavaScript)
-file_path = r"C:\Users\EmmaR\Downloads\johnrellis-users-api-master\routes\v1\transformIdOutgoing.js" 
-
-# Read the code from the file
-with open(file_path, 'r') as file:
-    code_to_convert = file.read()
+selected_model = "OpenAI - GPT-4o" 
 
 # Request payload
 payload = {
