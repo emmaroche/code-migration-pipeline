@@ -1,5 +1,6 @@
 import os
 import requests
+import subprocess
 from datetime import datetime
 
 # API endpoint 
@@ -7,7 +8,7 @@ api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
 # Define the source and target languages
 source_language = "Java"
-target_language = "Kotlin"  # Example: Replace with actual target language dynamically
+target_language = "Kotlin" 
 
 # Define file extension mappings for target languages
 language_extensions = {
@@ -35,7 +36,7 @@ else:
 prompt = (
     f"Migrate the provided {source_language} code to {target_language}, ensuring compatibility and functionality."
     "\n\n"
-    "Preserve the functionality and structure of the code while excluding any comments."
+    "Keep the imports in the file path when migrating the code."
     f"Replace language-specific syntax and constructs with equivalents in {target_language}, maintaining code integrity."
     f" Ensure compliance with {target_language}'s type system, idiomatic practices, and coding conventions for optimal performance."
     f" Ensure compatibility and equivalent functionality when migrating from any frameworks identified as being used to a similar framework in {target_language}."
@@ -43,7 +44,7 @@ prompt = (
     " Provide only the migrated code without any explanations, comments, or markdown syntax."
 )
 
-selected_model = "VertexAI - Gemini Pro" 
+selected_model = "VertexAI - PaLM 2" 
 
 # Request payload
 payload = {
@@ -65,25 +66,38 @@ if response.status_code == 200:
     if converted_code.startswith("```") and converted_code.endswith("```"):
         converted_code = converted_code[converted_code.find("\n")+1:converted_code.rfind("\n")]
 
-    # Print the converted code
-    print("Converted code:\n")
-    print(converted_code)
-
-    # Create a folder named 'output' (if it doesn't exist) to store the converted code
+    # Create the output folder (if it doesn't exist)
     output_folder = 'output'
     os.makedirs(output_folder, exist_ok=True)
+
+    # Determine the folder path based on selected model name
+    output_model_folder = os.path.join(output_folder, selected_model)
+    os.makedirs(output_model_folder, exist_ok=True)
 
     # Determine the file extension based on the target language
     file_extension = language_extensions.get(target_language, 'txt')
 
     # Generate a unique filename using a timestamp and target language
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    output_file_path = os.path.join(output_folder, f"converted_code_{target_language}_{timestamp}.{file_extension}")
+    output_file_path = os.path.join(output_model_folder, f"converted_code_{target_language}_{timestamp}.{file_extension}")
     
     # Save the converted code to the unique file
     with open(output_file_path, 'w') as file:
         file.write(converted_code)
 
-    print("\n\n" f"Converted code has been saved to {output_file_path}")
+    print(f"\n\nConverted code has been saved to {output_file_path}")
+
+    # Run SonarScanner command using subprocess
+    sonar_scanner_command = (
+        "sonar-scanner.bat "
+        "-D\"sonar.projectKey=Dissertation\" "
+        f"-D\"sonar.sources={output_file_path}\" "
+        "-D\"sonar.host.url=http://localhost:9000\" "
+        "-D\"sonar.token=sqp_597c320197ea7108a85634755a2b3f8393afdb8e\""
+    )
+
+    print("\nRunning SonarScanner...\n")
+    subprocess.run(sonar_scanner_command, shell=True, check=True)
+
 else:
     print("Error:", response.text)
