@@ -42,20 +42,20 @@ def code_migration():
     chain = prompt | model
 
     # Invoke the chain to convert the code 
-    converted_code = chain.invoke({"question": prompt_data, "answer": code_to_convert})
+    migrated_code = chain.invoke({"question": prompt_data, "answer": code_to_convert})
 
-    # Extracting content based on the type of the converted_code object
-    if isinstance(converted_code, str):  # If converted_code is a string
-        converted_content = converted_code.strip()
-    elif hasattr(converted_code, 'content'):  # If converted_code has 'content' attribute
-        converted_content = converted_code.content.strip()
+    # Extracting content based on the type of the migrated_code object
+    if isinstance(migrated_code, str):  # If migrated_code is a string
+        migrated_content = migrated_code.strip()
+    elif hasattr(migrated_code, 'content'):  # If migrated_code has 'content' attribute
+        migrated_content = migrated_code.content.strip()
     else:
-        return jsonify({"error": "Unable to extract converted code"}), 500
+        return jsonify({"error": "Unable to extract migrated code"}), 500
 
     # Construct response
     response = {
         "original_code": code_to_convert.strip(),
-        "converted_code": converted_content,
+        "migrated_code": migrated_content,
         "model_used": selected_model  
     }
 

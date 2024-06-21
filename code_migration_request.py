@@ -18,86 +18,99 @@ language_extensions = {
     "TypeScript": "ts",
 }
 
-# GitHub repository and file path
-github_repo = "emmaroche/data-preparation"
-github_file_path = "code-artefacts/java/ShopV6.0/src/controllers/Store.java"
+# List of file paths to migrate from the repository
+repositories = [
+    {
+        "repo": "emmaroche/data-preparation",
+        "file_paths": [
+            "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
+            # "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
+            # "code-artefacts/java/ShopV6.0/src/utils/Utilities.java"
+        ]
+    },
+]
 
-# Construct the raw URL
-raw_url = f"https://raw.githubusercontent.com/{github_repo}/master/{github_file_path}"
+# Iterate over each repository and file path
+for repo_info in repositories:
+    github_repo = repo_info["repo"]
+    for github_file_path in repo_info["file_paths"]:
+        # Construct the raw URL
+        raw_url = f"https://raw.githubusercontent.com/{github_repo}/master/{github_file_path}"
 
-# Download the file content from GitHub
-response = requests.get(raw_url)
-if response.status_code == 200:
-    code_to_convert = response.text
-else:
-    raise Exception(f"Failed to download the file from GitHub. Status code: {response.status_code}")
+        # Download the file content from GitHub
+        response = requests.get(raw_url)
+        if response.status_code == 200:
+            code_to_convert = response.text
+        else:
+            raise Exception(f"Failed to download the file from GitHub ({github_repo}/{github_file_path}). Status code: {response.status_code}")
 
-# Define the prompt and selected model name
-prompt = (
-    f"Migrate the provided {source_language} code to {target_language}, ensuring compatibility and functionality."
-    "\n\n"
-    "Keep the imports in the file path when migrating the code."
-    f"Replace language-specific syntax and constructs with equivalents in {target_language}, maintaining code integrity."
-    f" Ensure compliance with {target_language}'s type system, idiomatic practices, and coding conventions for optimal performance."
-    f" Ensure compatibility and equivalent functionality when migrating from any frameworks identified as being used to a similar framework in {target_language}."
-    f" Refactor the code to leverage {target_language}'s features and best practices, enhancing maintainability and efficiency."
-    " Provide only the migrated code without any explanations, comments, or markdown syntax."
-)
+        # Define the prompt and selected model name
+        prompt = (
+            f"Migrate the provided {source_language} code to {target_language}, ensuring compatibility and functionality."
+            "\n\n"
+            "Keep the imports in the file path when migrating the code."
+            f"Replace language-specific syntax and constructs with equivalents in {target_language}, maintaining code integrity."
+            f" Ensure compliance with {target_language}'s type system, idiomatic practices, and coding conventions for optimal performance."
+            f" Ensure compatibility and equivalent functionality when migrating from any frameworks identified as being used to a similar framework in {target_language}."
+            f" Refactor the code to leverage {target_language}'s features and best practices, enhancing maintainability and efficiency."
+            " Provide only the migrated code without any explanations, comments, or markdown syntax."
+        )
 
-selected_model = "VertexAI - PaLM 2" 
+        selected_model = "VertexAI - Codey"
 
-# Request payload
-payload = {
-    'model': selected_model,
-    'prompt': prompt,
-    'code': code_to_convert
-}
+        # Request payload
+        payload = {
+            'model': selected_model,
+            'prompt': prompt,
+            'code': code_to_convert
+        }
 
-# POST request to the API endpoint
-response = requests.post(api_endpoint, json=payload)
+        # POST request to the API endpoint
+        response = requests.post(api_endpoint, json=payload)
 
-# Checking if the request was successful
-if response.status_code == 200:
-    print("Model Used: ", selected_model)
-    # Extract the converted code
-    converted_code = response.json().get('converted_code', '')
+        # Checking if the request was successful
+        if response.status_code == 200:
+            print(f"Model Used for {github_repo}/{github_file_path}: ", selected_model)
+            # Extract the migrated code
+            migrated_code = response.json().get('migrated_code', '')
 
-    # Remove any markdown code block markers for output saving purposes
-    if converted_code.startswith("```") and converted_code.endswith("```"):
-        converted_code = converted_code[converted_code.find("\n")+1:converted_code.rfind("\n")]
+            # Create the output folder (if it doesn't exist)
+            output_folder = 'output'
+            os.makedirs(output_folder, exist_ok=True)
 
-    # Create the output folder (if it doesn't exist)
-    output_folder = 'output'
-    os.makedirs(output_folder, exist_ok=True)
+            # Generate a unique identifier for each file to avoid overwriting
+            unique_identifier = datetime.now().strftime('%Y%m%d%H%M%S')
 
-    # Determine the folder path based on selected model name
-    output_model_folder = os.path.join(output_folder, selected_model)
-    os.makedirs(output_model_folder, exist_ok=True)
+            # Determine the folder path based on selected model name
+            output_model_folder = os.path.join(output_folder, selected_model)
+            os.makedirs(output_model_folder, exist_ok=True)
 
-    # Determine the file extension based on the target language
-    file_extension = language_extensions.get(target_language, 'txt')
+            # Determine the file extension based on the target language
+            target_language_extension = language_extensions.get(target_language, 'txt')
 
-    # Generate a unique filename using a timestamp and target language
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    output_file_path = os.path.join(output_model_folder, f"converted_code_{target_language}_{timestamp}.{file_extension}")
-    
-    # Save the converted code to the unique file
-    with open(output_file_path, 'w') as file:
-        file.write(converted_code)
+            # Generate output file path
+            output_file_path = os.path.join(output_model_folder, f"migrated_code_{target_language}_{unique_identifier}_{github_file_path.replace('/', '_')}.{target_language_extension}")
 
-    print(f"\n\nConverted code has been saved to {output_file_path}")
+            # Save the migrated code to the unique file
+            with open(output_file_path, 'w') as file:
+                file.write(migrated_code)
 
-    # Run SonarScanner command using subprocess
-    sonar_scanner_command = (
-        "sonar-scanner.bat "
-        "-D\"sonar.projectKey=Dissertation\" "
-        f"-D\"sonar.sources={output_file_path}\" "
-        "-D\"sonar.host.url=http://localhost:9000\" "
-        "-D\"sonar.token=sqp_597c320197ea7108a85634755a2b3f8393afdb8e\""
-    )
+            print(f"\Migrated code for {github_repo}/{github_file_path} has been saved to {output_file_path}")
 
-    print("\nRunning SonarScanner...\n")
-    subprocess.run(sonar_scanner_command, shell=True, check=True)
+            # SonarQube project key 
+            sonar_project_key = "Dissertation"
 
-else:
-    print("Error:", response.text)
+            # Run SonarScanner to analyse the migrated code
+            sonar_scanner_command = (
+                "sonar-scanner.bat "
+                f"-D\"sonar.projectKey={sonar_project_key}\" "
+                "-D\"sonar.sources=output\" "  # Use a common output directory
+                "-D\"sonar.host.url=http://localhost:9000\" "
+                "-D\"sonar.token=sqp_597c320197ea7108a85634755a2b3f8393afdb8e\""
+            )
+
+            print("\nRunning SonarScanner...\n")
+            subprocess.run(sonar_scanner_command, shell=True, check=True)
+
+        else:
+            print(f"Error for {github_repo}/{github_file_path}: {response.text}")
