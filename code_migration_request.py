@@ -23,12 +23,27 @@ repositories = [
     {
         "repo": "emmaroche/data-preparation",
         "file_paths": [
-            "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
+            # "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
             # "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
-            # "code-artefacts/java/ShopV6.0/src/utils/Utilities.java"
+            # "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
+            "code-artefacts/java/ShopV6.0/src/models/Product.java" 
         ]
     },
 ]
+
+# Function to extract folder name from file path and create new folder if needed
+def get_folder_name(file_path):
+    # Split the file path by '/' to extract the folder name
+    parts = file_path.split('/')
+    # Get the second last part of the path (before the file with the content to migrate)
+    if len(parts) >= 2:
+        folder_name = parts[-2]
+        # Create a new folder if it doesn't exist
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+        return folder_name
+    else:
+        return ''
 
 # Iterate over each repository and file path
 for repo_info in repositories:
@@ -74,28 +89,29 @@ for repo_info in repositories:
             # Extract the migrated code
             migrated_code = response.json().get('migrated_code', '')
 
-            # Create the output folder (if it doesn't exist)
-            output_folder = 'output'
+            # Determine the output folder based on the file path
+            folder_name = get_folder_name(github_file_path)
+            if folder_name:
+                output_folder = os.path.join('output', selected_model, folder_name)
+            else:
+                output_folder = 'output'
+
             os.makedirs(output_folder, exist_ok=True)
 
-            # Generate a unique identifier for each file to avoid overwriting
+            # Generates a unique identifier for each file to avoid overwriting
             unique_identifier = datetime.now().strftime('%Y%m%d%H%M%S')
-
-            # Determine the folder path based on selected model name
-            output_model_folder = os.path.join(output_folder, selected_model)
-            os.makedirs(output_model_folder, exist_ok=True)
 
             # Determine the file extension based on the target language
             target_language_extension = language_extensions.get(target_language, 'txt')
 
             # Generate output file path
-            output_file_path = os.path.join(output_model_folder, f"migrated_code_{target_language}_{unique_identifier}_{github_file_path.replace('/', '_')}.{target_language_extension}")
+            output_file_path = os.path.join(output_folder, f"migrated_code_{target_language}_{unique_identifier}_{os.path.basename(github_file_path)}.{target_language_extension}")
 
             # Save the migrated code to the unique file
             with open(output_file_path, 'w') as file:
                 file.write(migrated_code)
 
-            print(f"\Migrated code for {github_repo}/{github_file_path} has been saved to {output_file_path}")
+            print(f"Migrated code for {github_repo}/{github_file_path} has been saved to {output_file_path}")
 
             # SonarQube project key 
             sonar_project_key = "Dissertation"
@@ -104,7 +120,7 @@ for repo_info in repositories:
             sonar_scanner_command = (
                 "sonar-scanner.bat "
                 f"-D\"sonar.projectKey={sonar_project_key}\" "
-                "-D\"sonar.sources=output\" "  # Use a common output directory
+                "-D\"sonar.sources=output\" "  
                 "-D\"sonar.host.url=http://localhost:9000\" "
                 "-D\"sonar.token=sqp_597c320197ea7108a85634755a2b3f8393afdb8e\""
             )
