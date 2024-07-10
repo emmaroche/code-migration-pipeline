@@ -1,7 +1,9 @@
 import os
 import requests
 import subprocess
+import json
 from datetime import datetime
+import re
 
 # API endpoint 
 api_endpoint = 'http://127.0.0.1:5000/code-migration'
@@ -23,9 +25,9 @@ repositories = [
     {
         "repo": "emmaroche/data-preparation",
         "file_paths": [
-            # "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
-            # "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
-            # "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
+            "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
+            "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
+            "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
             "code-artefacts/java/ShopV6.0/src/models/Product.java" 
         ]
     },
@@ -45,6 +47,23 @@ def get_folder_name(file_path):
     else:
         return ''
 
+# Function to extract code and extra content
+def extract_code_and_extra_content(migrated_code):
+    code_lines = []
+    extra_content = ''
+
+    in_code_block = False
+
+    for line in migrated_code.split('\n'):
+        if re.match(r'```', line):
+            in_code_block = not in_code_block
+        elif in_code_block:
+            code_lines.append(line)
+        else:
+            extra_content += line + '\n'
+
+    return '\n'.join(code_lines), extra_content.strip()
+
 # Iterate over each repository and file path
 for repo_info in repositories:
     github_repo = repo_info["repo"]
@@ -62,16 +81,14 @@ for repo_info in repositories:
         # Define the prompt and selected model name
         prompt = (
             f"Migrate the provided {source_language} code to {target_language}, ensuring compatibility and functionality."
-            "\n\n"
-            "Keep the imports in the file path when migrating the code."
-            f"Replace language-specific syntax and constructs with equivalents in {target_language}, maintaining code integrity."
-            f" Ensure compliance with {target_language}'s type system, idiomatic practices, and coding conventions for optimal performance."
-            f" Ensure compatibility and equivalent functionality when migrating from any frameworks identified as being used to a similar framework in {target_language}."
-            f" Refactor the code to leverage {target_language}'s features and best practices, enhancing maintainability and efficiency."
-            " Provide only the migrated code without any explanations, comments, or markdown syntax."
+            # "Keep the imports in the file path when migrating the code."
+            # f"Replace language-specific syntax and constructs with equivalents in {target_language}, maintaining code integrity."
+            # f" Ensure compliance with {target_language}'s type system, idiomatic practices, and coding conventions for optimal performance."
+            # f" Ensure compatibility and equivalent functionality when migrating from any frameworks identified as being used to a similar framework in {target_language}."
+            # f" Refactor the code to leverage {target_language}'s features and best practices, enhancing maintainability and efficiency."
         )
 
-        selected_model = "VertexAI - Codey"
+        selected_model = "Ollama - Llama 2"
 
         # Request payload
         payload = {
@@ -86,15 +103,31 @@ for repo_info in repositories:
         # Checking if the request was successful
         if response.status_code == 200:
             print(f"Model Used for {github_repo}/{github_file_path}: ", selected_model)
-            # Extract the migrated code
-            migrated_code = response.json().get('migrated_code', '')
+            # Extract the response JSON
+            response_json = response.json()
+
+            # Extract the migrated code from the JSON
+            migrated_code = response_json.get('migrated_code', '').strip()
+
+            # Separate code and extra content
+            migrated_code, extra_content = extract_code_and_extra_content(migrated_code)
+
+            # Add extra content to the JSON
+            response_json['extra_content'] = extra_content
+
+            # Save the entire response JSON to a file
+            json_folder = os.path.join('output', 'json', selected_model.split(' - ')[-1])
+            os.makedirs(json_folder, exist_ok=True)
+            json_file_path = os.path.join(json_folder, f"response_{os.path.basename(github_file_path)}.json")
+            with open(json_file_path, 'w') as json_file:
+                json.dump(response_json, json_file, indent=4)
 
             # Determine the output folder based on the file path
             folder_name = get_folder_name(github_file_path)
             if folder_name:
-                output_folder = os.path.join('output', selected_model, folder_name)
+                output_folder = os.path.join('output', selected_model.split(' - ')[-1], folder_name)
             else:
-                output_folder = 'output'
+                output_folder = os.path.join('output', selected_model.split(' - ')[-1])
 
             os.makedirs(output_folder, exist_ok=True)
 
