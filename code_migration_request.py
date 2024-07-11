@@ -4,6 +4,7 @@ import subprocess
 import json
 from datetime import datetime
 import re
+import time
 
 # API endpoint 
 api_endpoint = 'http://127.0.0.1:5000/code-migration'
@@ -64,6 +65,10 @@ def extract_code_and_extra_content(migrated_code):
 
     return '\n'.join(code_lines), extra_content.strip()
 
+# Timer variables
+start_time = time.time()
+total_requests = 0
+
 # Iterate over each repository and file path
 for repo_info in repositories:
     github_repo = repo_info["repo"]
@@ -88,7 +93,7 @@ for repo_info in repositories:
             # f" Refactor the code to leverage {target_language}'s features and best practices, enhancing maintainability and efficiency."
         )
 
-        selected_model = "Ollama - Llama 2"
+        selected_model = "VertexAI - Gemini Pro"
 
         # Request payload
         payload = {
@@ -115,13 +120,6 @@ for repo_info in repositories:
             # Add extra content to the JSON
             response_json['extra_content'] = extra_content
 
-            # Save the entire response JSON to a file
-            json_folder = os.path.join('output', 'json', selected_model.split(' - ')[-1])
-            os.makedirs(json_folder, exist_ok=True)
-            json_file_path = os.path.join(json_folder, f"response_{os.path.basename(github_file_path)}.json")
-            with open(json_file_path, 'w') as json_file:
-                json.dump(response_json, json_file, indent=4)
-
             # Determine the output folder based on the file path
             folder_name = get_folder_name(github_file_path)
             if folder_name:
@@ -131,8 +129,8 @@ for repo_info in repositories:
 
             os.makedirs(output_folder, exist_ok=True)
 
-            # Generates a unique identifier for each file to avoid overwriting
-            unique_identifier = datetime.now().strftime('%Y%m%d%H%M%S')
+            # Generate a unique identifier for each file to avoid overwriting
+            unique_identifier = datetime.now().strftime('%Y%m%d%H%M%S%f')
 
             # Determine the file extension based on the target language
             target_language_extension = language_extensions.get(target_language, 'txt')
@@ -145,6 +143,15 @@ for repo_info in repositories:
                 file.write(migrated_code)
 
             print(f"Migrated code for {github_repo}/{github_file_path} has been saved to {output_file_path}")
+
+            # Save the entire response JSON to a new JSON file
+            json_folder = os.path.join('output', 'json', selected_model.split(' - ')[-1])
+            os.makedirs(json_folder, exist_ok=True)
+            json_file_path = os.path.join(json_folder, f"response_{os.path.basename(github_file_path)}_{unique_identifier}.json")
+            with open(json_file_path, 'w') as json_file:
+                json.dump(response_json, json_file, indent=4)
+
+            print(f"Response JSON for {github_repo}/{github_file_path} has been saved to {json_file_path}")
 
             # SonarQube project key 
             sonar_project_key = "Dissertation"
@@ -161,5 +168,15 @@ for repo_info in repositories:
             print("\nRunning SonarScanner...\n")
             subprocess.run(sonar_scanner_command, shell=True, check=True)
 
+            total_requests += 1
+
         else:
             print(f"Error for {github_repo}/{github_file_path}: {response.text}")
+
+# Calculate total time taken
+end_time = time.time()
+total_time = end_time - start_time
+
+# Print summary
+print(f"\nAll requests completed in {total_time:.2f} seconds.")
+print(f"Total number of requests processed: {total_requests}")
