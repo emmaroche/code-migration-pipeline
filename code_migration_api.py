@@ -17,8 +17,8 @@ MODELS = {
     "Ollama - CodeGemma": Ollama(model="codegemma"),
     "VertexAI - Gemini Pro": VertexAI(model_name="gemini-pro"),
     # Max Token specification added, as the responses are cut short without it for the PaLM 2 and Codey models only
-    "VertexAI - PaLM 2": VertexAI(model_name="text-bison", max_output_tokens=1024),
-    "VertexAI - Codey": VertexAI(model_name="code-bison", max_output_tokens=1024)
+    "VertexAI - PaLM 2": VertexAI(model_name="text-bison", max_output_tokens=2048),
+    "VertexAI - Codey": VertexAI(model_name="code-bison", max_output_tokens=2048)
 }
 
 @app.route('/code-migration', methods=['POST'])
