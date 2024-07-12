@@ -88,13 +88,14 @@ def extract_code_combined(response_json):
     # Extract using regex-based method
     migrated_code_regex, extra_content_regex = extract_code_and_extra_content(response_json)
 
-    # Extract using indentation-based method
-    migrated_code_indentation, extra_content_indentation = extract_code_and_extra_content_indentation(response_json)
-
-    # Combine results as needed, for example:
-    # Here, we concatenate the migrated code and extra content
-    migrated_code_combined = f"{migrated_code_regex}\n{migrated_code_indentation}"
-    extra_content_combined = f"{extra_content_regex}\n{extra_content_indentation}"
+    # Only use indentation-based method if regex-based method did not find valid content
+    if not migrated_code_regex:
+        migrated_code_indentation, extra_content_indentation = extract_code_and_extra_content_indentation(response_json)
+        migrated_code_combined = migrated_code_indentation
+        extra_content_combined = extra_content_indentation
+    else:
+        migrated_code_combined = migrated_code_regex
+        extra_content_combined = extra_content_regex
 
     return migrated_code_combined, extra_content_combined
 
@@ -106,7 +107,7 @@ extraction_functions = {
     "OpenAI - GPT-3.5 Turbo": extract_code_combined,  # Use regex-based extraction
     "OpenAI - GPT-4o": extract_code_combined,  # Use regex-based extraction
     "OpenAI - GPT-4 Turbo": extract_code_combined,  # Use regex-based extraction
-    "Ollama - Llama 2": extract_code_and_extra_content_indentation,  # Use indentation-based extraction
+    "Ollama - Llama 2": extract_code_combined,  # Use indentation-based extraction
     "Ollama - Llama 3":extract_code_combined,  # Use indentation-based extraction
     "Ollama - CodeGemma": extract_code_combined,  # Use indentation-based extraction
     "Ollama - CodeLlama": extract_code_combined,  # Use indentation-based extraction
@@ -224,7 +225,7 @@ for repo_info in repositories:
     github_repo = repo_info["repo"]
     for github_file_path in repo_info["file_paths"]:
         # Define the model to use for this run
-        selected_model = "OpenAI - GPT-4 Turbo"  # Change the model name here as needed
+        selected_model = "Ollama - Llama 2"  # Change the model name here as needed
         extraction_function = extraction_functions.get(selected_model)
         if extraction_function is None:
             raise ValueError(f"No extraction function found for model: {selected_model}")
