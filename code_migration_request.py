@@ -10,8 +10,8 @@ import time
 api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
 # Define the source and target languages
-source_language = 'Java'
-target_language = 'Kotlin'
+source_language = 'JavaScript'
+target_language = 'Python'
 
 # Define file extension mappings for target languages
 language_extensions = {
@@ -26,18 +26,17 @@ repositories = [
     {
         "repo": "emmaroche/data-preparation",
         "file_paths": [
-            "code-artefacts/java/SocialNetworkV8.0/src/controllers/NewsFeed.java",
-            "code-artefacts/java/SocialNetworkV8.0/src/main/Driver.java",
-            "code-artefacts/java/SocialNetworkV8.0/src/models/EventPost.java",
-            "code-artefacts/java/SocialNetworkV8.0/src/models/LikedPost.java",
-            "code-artefacts/java/SocialNetworkV8.0/src/models/MessagePost.java",
-            "code-artefacts/java/SocialNetworkV8.0/src/models/PhotoPost.java",
-            "code-artefacts/java/SocialNetworkV8.0/src/models/Post.java",
-            "code-artefacts/java/SocialNetworkV8.0/src/utils/ScannerInput.java",
-            "code-artefacts/java/SocialNetworkV8.0/src/utils/Utilities.java"
+            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/controllers/user.controller.js",
+            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/middleware/paginationAndSort.js",
+            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/models/user.model.js",
+            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/schemas/user.schema.js",
+            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/index.js",
+            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/transformIdOutgoing.js",
+            "code-artefacts/javascript/johnrellis-users-api-master/app.js"
         ]
     },
 ]
+
 
 # List of models to run sequentially
 models = [
@@ -47,10 +46,10 @@ models = [
     'OpenAI - GPT-3.5 Turbo',
     'OpenAI - GPT-4o',
     'OpenAI - GPT-4 Turbo',
-    # 'Ollama - Llama 2',
     'Ollama - Llama 3',
-    # 'Ollama - CodeGemma',
-    # 'Ollama - CodeLlama'
+    'Ollama - Llama 2',
+    'Ollama - CodeGemma',
+    'Ollama - CodeLlama'
 ]
 
 # Function to extract folder name from file path and create new folder if needed
@@ -248,12 +247,11 @@ def migrate_code(github_repo, github_file_path, selected_model, extraction_funct
         print(f'Error for {github_repo}/{github_file_path} using model {selected_model}: {response.text}')
         return False
 
-# Iterate over each repository and file path
-for repo_info in repositories:
-    github_repo = repo_info['repo']
-    for github_file_path in repo_info['file_paths']:
-        # Iterate over each model
-        for selected_model in models:
+# Iterate over each model first, then each repository and file path
+for selected_model in models:
+    for repo_info in repositories:
+        github_repo = repo_info['repo']
+        for github_file_path in repo_info['file_paths']:
             extraction_function = extraction_functions.get(selected_model)
             if extraction_function is None:
                 raise ValueError(f'No extraction function found for model: {selected_model}')
@@ -264,6 +262,8 @@ for repo_info in repositories:
 # Calculate total time taken
 end_time = time.time()
 total_time = end_time - start_time
+
+# Calculate total time taken in minutes
 total_time_minutes = total_time / 60.0
 
 # Print model times
