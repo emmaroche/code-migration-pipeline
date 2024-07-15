@@ -24,13 +24,17 @@ language_extensions = {
 # List of file paths to migrate from the repository
 repositories = [
     {
-        'repo': 'emmaroche/data-preparation',
-        'file_paths': [
-            # 'code-artefacts/java/ShopV6.0/src/controllers/Store.java',
-            # 'code-artefacts/java/ShopV6.0/src/utils/Utilities.java',
-            # 'code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java',
-            # 'code-artefacts/java/ShopV6.0/src/models/Product.java',
-            'code-artefacts/java/ShopV6.0/src/main/Driver.java'
+        "repo": "emmaroche/data-preparation",
+        "file_paths": [
+            "code-artefacts/java/SocialNetworkV8.0/src/controllers/NewsFeed.java",
+            "code-artefacts/java/SocialNetworkV8.0/src/main/Driver.java",
+            "code-artefacts/java/SocialNetworkV8.0/src/models/EventPost.java",
+            "code-artefacts/java/SocialNetworkV8.0/src/models/LikedPost.java",
+            "code-artefacts/java/SocialNetworkV8.0/src/models/MessagePost.java",
+            "code-artefacts/java/SocialNetworkV8.0/src/models/PhotoPost.java",
+            "code-artefacts/java/SocialNetworkV8.0/src/models/Post.java",
+            "code-artefacts/java/SocialNetworkV8.0/src/utils/ScannerInput.java",
+            "code-artefacts/java/SocialNetworkV8.0/src/utils/Utilities.java"
         ]
     },
 ]
@@ -39,12 +43,12 @@ repositories = [
 models = [
     'VertexAI - PaLM 2',
     'VertexAI - Gemini Pro',
-    # 'VertexAI - Codey',
-    # 'OpenAI - GPT-3.5 Turbo',
-    # 'OpenAI - GPT-4o',
-    # 'OpenAI - GPT-4 Turbo',
+    'VertexAI - Codey',
+    'OpenAI - GPT-3.5 Turbo',
+    'OpenAI - GPT-4o',
+    'OpenAI - GPT-4 Turbo',
     # 'Ollama - Llama 2',
-    # 'Ollama - Llama 3',
+    'Ollama - Llama 3',
     # 'Ollama - CodeGemma',
     # 'Ollama - CodeLlama'
 ]
@@ -260,12 +264,14 @@ for repo_info in repositories:
 # Calculate total time taken
 end_time = time.time()
 total_time = end_time - start_time
+total_time_minutes = total_time / 60.0
 
 # Print model times
 print("\nModel execution times:")
 for model, time_taken in model_times.items():
-    print(f"{model}: {time_taken:.2f} seconds")
+    time_taken_minutes = time_taken / 60.0
+    print(f"{model}: {time_taken_minutes:.2f} minutes")
 
 # Print summary
-print(f'\nAll requests completed in {total_time:.2f} seconds.')
+print(f'\nAll requests completed in {total_time_minutes:.2f} minutes.')
 print(f'Total number of requests processed: {total_requests}')
