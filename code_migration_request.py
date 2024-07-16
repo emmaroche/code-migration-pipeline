@@ -10,15 +10,15 @@ import time
 api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
 # Define the source and target languages
-source_language = 'JavaScript'
-target_language = 'Python'
+source_language = 'javascript'
+target_language = 'typescript'
 
 # Define file extension mappings for target languages
 language_extensions = {
-    'Kotlin': 'kt',
-    'Python': 'py',
-    'Swift': 'swift',
-    'TypeScript': 'ts',
+    'kotlin': 'kt',
+    'python': 'py',
+    'swift': 'swift',
+    'typescript': 'ts',
 }
 
 # List of file paths to migrate from the repository
@@ -26,30 +26,42 @@ repositories = [
     {
         "repo": "emmaroche/data-preparation",
         "file_paths": [
-            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/controllers/user.controller.js",
-            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/middleware/paginationAndSort.js",
-            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/models/user.model.js",
-            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/schemas/user.schema.js",
-            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/index.js",
-            "code-artefacts/javascript/johnrellis-users-api-master/routes/v1/transformIdOutgoing.js",
-            "code-artefacts/javascript/johnrellis-users-api-master/app.js"
+            "code-artefacts/javascript/hapi-master/lib/auth.js",
+            "code-artefacts/javascript/hapi-master/lib/compression.js",
+            # "code-artefacts/javascript/hapi-master/lib/config.js",
+            # "code-artefacts/javascript/hapi-master/lib/core.js",
+            # "code-artefacts/javascript/hapi-master/lib/cors.js",
+            # "code-artefacts/javascript/hapi-master/lib/ext.js",
+            # "code-artefacts/javascript/hapi-master/lib/handler.js",
+            # "code-artefacts/javascript/hapi-master/lib/headers.js",
+            # "code-artefacts/javascript/hapi-master/lib/index.d.ts",
+            # "code-artefacts/javascript/hapi-master/lib/index.js",
+            # "code-artefacts/javascript/hapi-master/lib/methods.js",
+            # "code-artefacts/javascript/hapi-master/lib/request.js",
+            # "code-artefacts/javascript/hapi-master/lib/response.js",
+            # "code-artefacts/javascript/hapi-master/lib/route.js",
+            # "code-artefacts/javascript/hapi-master/lib/security.js",
+            # "code-artefacts/javascript/hapi-master/lib/server.js",
+            # "code-artefacts/javascript/hapi-master/lib/streams.js",
+            # "code-artefacts/javascript/hapi-master/lib/toolkit.js",
+            # "code-artefacts/javascript/hapi-master/lib/transmit.js" 
+            # "code-artefacts/javascript/hapi-master/lib/validation.js"
         ]
     },
 ]
 
-
 # List of models to run sequentially
 models = [
-    'VertexAI - PaLM 2',
+    # 'VertexAI - PaLM 2',
     'VertexAI - Gemini Pro',
-    'VertexAI - Codey',
-    'OpenAI - GPT-3.5 Turbo',
-    'OpenAI - GPT-4o',
-    'OpenAI - GPT-4 Turbo',
-    'Ollama - Llama 3',
-    'Ollama - Llama 2',
-    'Ollama - CodeGemma',
-    'Ollama - CodeLlama'
+    # 'VertexAI - Codey',
+    # 'OpenAI - GPT-3.5 Turbo',
+    # 'OpenAI - GPT-4o',
+    # 'OpenAI - GPT-4 Turbo',
+    # 'Ollama - Llama 3',
+    # 'Ollama - Llama 2',
+    # 'Ollama - CodeGemma',
+    # 'Ollama - CodeLlama'
 ]
 
 # Function to extract folder name from file path and create new folder if needed
@@ -71,13 +83,13 @@ def extract_code_and_extra_content(response_json):
     migrated_code = response_json.get('migrated_code', '')
     extra_content = response_json.get('extra_content', '')
 
-    # Match Kotlin code block in Markdown format with closing triple backticks
-    code_block_match = re.search(r'```kotlin\n([\s\S]*?)\n```', migrated_code)
+    # Match code block in Markdown format with closing triple backticks for target_language
+    code_block_match = re.search(rf'```{target_language}\n([\s\S]*?)\n```', migrated_code, re.IGNORECASE)
     if code_block_match:
         migrated_code = code_block_match.group(1).strip()
     else:
-        # Match Kotlin code block starting with '''kotlin (no closing backticks)
-        code_block_match = re.search(r"'''kotlin\n([\s\S]*)", migrated_code)
+        # Match code block starting with ''' followed by target_language (no closing backticks)
+        code_block_match = re.search(rf"'''{target_language}\n([\s\S]*)", migrated_code, re.IGNORECASE)
         if code_block_match:
             migrated_code = code_block_match.group(1).strip()
 
@@ -94,8 +106,8 @@ def extract_code_and_extra_content_indentation(response_json):
         # Get the migrated code section
         migrated_code_block = response_json['migrated_code'].strip()
 
-        # Extract code from the Kotlin block
-        code_match = re.search(r'```kotlin\n(.+?)\n```', migrated_code_block, re.DOTALL)
+        # Extract code from the target_language block
+        code_match = re.search(rf'```{target_language}\n(.+?)\n```', migrated_code_block, re.DOTALL | re.IGNORECASE)
         if code_match:
             migrated_code = code_match.group(1).strip()
 
@@ -153,7 +165,9 @@ def migrate_code(github_repo, github_file_path, selected_model, extraction_funct
 
     # Define the prompt and selected model name
     prompt = (
-        f'Migrate the provided {source_language} code to {target_language}, ensuring compatibility and functionality.'
+        f"Migrate the provided {source_language} code to {target_language} code."
+        "Ensure the functionality and compatibility are preserved."
+        "Keep the imports in the file path when migrating the code."
     )
 
     # Request payload
