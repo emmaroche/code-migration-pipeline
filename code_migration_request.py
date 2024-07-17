@@ -231,7 +231,7 @@ def migrate_code(github_repo, github_file_path, selected_model, extraction_funct
             f'-D"sonar.projectKey={sonar_project_key}" '
             '-D"sonar.sources=output" '  
             '-D"sonar.host.url=http://localhost:9000" '
-            '-D"sonar.token=sqp_597c320197ea7108a85634755a2b3f8393afdb8e"'
+            '-D"sonar.token=sqp_7369e88b3954c254fec451fb9bdbd6c7aa8e75a0"'
         )
 
         print('\nRunning SonarScanner...\n')
