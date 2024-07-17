@@ -10,8 +10,8 @@ import time
 api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
 # Define the source and target languages
-source_language = 'javascript'
-target_language = 'typescript'
+source_language = 'java'
+target_language = 'kotlin'
 
 # Define file extension mappings for target languages
 language_extensions = {
@@ -26,29 +26,15 @@ repositories = [
     {
         "repo": "emmaroche/data-preparation",
         "file_paths": [
-            "code-artefacts/javascript/hapi-master/lib/auth.js",
-            "code-artefacts/javascript/hapi-master/lib/compression.js",
-            # "code-artefacts/javascript/hapi-master/lib/config.js",
-            # "code-artefacts/javascript/hapi-master/lib/core.js",
-            # "code-artefacts/javascript/hapi-master/lib/cors.js",
-            # "code-artefacts/javascript/hapi-master/lib/ext.js",
-            # "code-artefacts/javascript/hapi-master/lib/handler.js",
-            # "code-artefacts/javascript/hapi-master/lib/headers.js",
-            # "code-artefacts/javascript/hapi-master/lib/index.d.ts",
-            # "code-artefacts/javascript/hapi-master/lib/index.js",
-            # "code-artefacts/javascript/hapi-master/lib/methods.js",
-            # "code-artefacts/javascript/hapi-master/lib/request.js",
-            # "code-artefacts/javascript/hapi-master/lib/response.js",
-            # "code-artefacts/javascript/hapi-master/lib/route.js",
-            # "code-artefacts/javascript/hapi-master/lib/security.js",
-            # "code-artefacts/javascript/hapi-master/lib/server.js",
-            # "code-artefacts/javascript/hapi-master/lib/streams.js",
-            # "code-artefacts/javascript/hapi-master/lib/toolkit.js",
-            # "code-artefacts/javascript/hapi-master/lib/transmit.js" 
-            # "code-artefacts/javascript/hapi-master/lib/validation.js"
+            "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
+            "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
+            "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
+            "code-artefacts/java/ShopV6.0/src/models/Product.java",
+            "code-artefacts/java/ShopV6.0/src/main/Driver.java"
         ]
     },
 ]
+
 
 # List of models to run sequentially
 models = [
