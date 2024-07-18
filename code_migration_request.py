@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 import requests
 import subprocess
 import json
@@ -6,12 +7,18 @@ from datetime import datetime
 import re
 import time
 
+# Load environment variables from .env file
+load_dotenv()
+
 # API endpoint 
 api_endpoint = 'http://127.0.0.1:5000/code-migration'
 
-# Define the source and target languages
-source_language = 'java'
-target_language = 'kotlin'
+# Retrieve environment variables
+sonar_token = os.getenv('SONAR_TOKEN')
+openai_api_key = os.getenv('OPENAI_API_KEY')
+source_language = os.getenv('SOURCE_LANGUAGE')
+target_language = os.getenv('TARGET_LANGUAGE')
+sonar_project_key = os.getenv('SONAR_PROJECT_KEY')
 
 # Define file extension mappings for target languages
 language_extensions = {
@@ -27,10 +34,10 @@ repositories = [
         "repo": "emmaroche/data-preparation",
         "file_paths": [
             "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
-            "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
-            "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
-            "code-artefacts/java/ShopV6.0/src/models/Product.java",
-            "code-artefacts/java/ShopV6.0/src/main/Driver.java"
+            # "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
+            # "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
+            # "code-artefacts/java/ShopV6.0/src/models/Product.java",
+            # "code-artefacts/java/ShopV6.0/src/main/Driver.java"
         ]
     },
 ]
@@ -222,16 +229,13 @@ def migrate_code(github_repo, github_file_path, selected_model, extraction_funct
 
         print(f'Response JSON for {github_repo}/{github_file_path} has been saved to {json_file_path}')
 
-        # SonarQube project key 
-        sonar_project_key = 'Dissertation'
-
         # Run SonarScanner to analyse the migrated code
         sonar_scanner_command = (
             'sonar-scanner.bat '
             f'-D"sonar.projectKey={sonar_project_key}" '
             '-D"sonar.sources=output" '  
             '-D"sonar.host.url=http://localhost:9000" '
-            '-D"sonar.token=sqp_7369e88b3954c254fec451fb9bdbd6c7aa8e75a0"'
+            f'-D"sonar.token={sonar_token}"'
         )
 
         print('\nRunning SonarScanner...\n')

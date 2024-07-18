@@ -1,3 +1,4 @@
 output/
 .scannerwork/
 pom.xml
+.env
