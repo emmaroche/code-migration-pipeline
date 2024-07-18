@@ -10,10 +10,8 @@ import time
 # Load environment variables from .env file
 load_dotenv()
 
-# API endpoint 
-api_endpoint = 'http://127.0.0.1:5000/code-migration'
-
 # Retrieve environment variables
+api_endpoint = os.getenv('API_ENDPOINT')
 sonar_token = os.getenv('SONAR_TOKEN')
 openai_api_key = os.getenv('OPENAI_API_KEY')
 source_language = os.getenv('SOURCE_LANGUAGE')
@@ -34,14 +32,13 @@ repositories = [
         "repo": "emmaroche/data-preparation",
         "file_paths": [
             "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
-            # "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
-            # "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
-            # "code-artefacts/java/ShopV6.0/src/models/Product.java",
-            # "code-artefacts/java/ShopV6.0/src/main/Driver.java"
+            "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
+            "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
+            "code-artefacts/java/ShopV6.0/src/models/Product.java",
+            "code-artefacts/java/ShopV6.0/src/main/Driver.java"
         ]
     },
 ]
-
 
 # List of models to run sequentially
 models = [
@@ -197,7 +194,7 @@ def migrate_code(github_repo, github_file_path, selected_model, extraction_funct
         # Determine the output folder based on the file path
         folder_name = get_folder_name(github_file_path)
         if folder_name:
-            output_folder = os.path.join('output', selected_model.split(' - ')[-1], folder_name)
+            output_folder = os.path.join('output', selected_model.split(' - ')[-1], 'src', folder_name)
         else:
             output_folder = os.path.join('output', selected_model.split(' - ')[-1])
 
@@ -221,7 +218,7 @@ def migrate_code(github_repo, github_file_path, selected_model, extraction_funct
             print(f'No valid migrated code for {github_repo}/{github_file_path} using model {selected_model}')
 
         # Save the entire response JSON to a new JSON file
-        json_folder = os.path.join('output', 'json', selected_model.split(' - ')[-1])
+        json_folder = os.path.join('output', 'json', selected_model.split(' - ')[-1], 'src')
         os.makedirs(json_folder, exist_ok=True)
         json_file_path = os.path.join(json_folder, f'response_{os.path.basename(github_file_path)}_{unique_identifier}.json')
         with open(json_file_path, 'w') as json_file:
