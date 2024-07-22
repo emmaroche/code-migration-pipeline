@@ -17,6 +17,7 @@ openai_api_key = os.getenv('OPENAI_API_KEY')
 source_language = os.getenv('SOURCE_LANGUAGE')
 target_language = os.getenv('TARGET_LANGUAGE')
 sonar_project_key = os.getenv('SONAR_PROJECT_KEY')
+sonar_host_url = os.getenv('SONAR_HOST_URL') 
 
 # Define file extension mappings for target languages
 language_extensions = {
@@ -31,10 +32,10 @@ repositories = [
     {
         "repo": "emmaroche/data-preparation",
         "file_paths": [
-            "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
-            "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
-            "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
-            "code-artefacts/java/ShopV6.0/src/models/Product.java",
+            # "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
+            # "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
+            # "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
+            # "code-artefacts/java/ShopV6.0/src/models/Product.java",
             "code-artefacts/java/ShopV6.0/src/main/Driver.java"
         ]
     },
@@ -138,12 +139,52 @@ start_time = time.time()
 total_requests = 0
 model_times = {}
 
+# Function to run SonarQube Scanner
+def run_sonar_scanner():
+    # Construct the SonarQube Scanner command
+    sonar_scanner_command = (
+        f'sonar-scanner '
+        f'-D"sonar.projectKey={sonar_project_key}" '
+        f'-D"sonar.sources=output" '
+        f'-D"sonar.host.url={sonar_host_url}" '
+        f'-D"sonar.token={sonar_token}" '
+        f'-D"sonar.exclusions=**/*.java" '
+    )
+
+    print('\nRunning SonarQube Scanner...\n')
+
+    try:
+        # Run SonarQube Scanner command
+        result = subprocess.run(sonar_scanner_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print('SonarQube analysis completed successfully.')
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f'Error running SonarQube Scanner: {e}')
+        print(e.stderr)
+
+# Function to run Gradle tests
+def run_tests():
+    # Use the absolute path to gradlew.bat
+    gradle_script = 'C:/Users/EmmaR/OneDrive/Documents/Pipeline/langchain/gradlew.bat'
+    gradle_command = f'{gradle_script} test'
+
+    print('\nRunning tests...\n')
+
+    try:
+        # Run Gradle command
+        result = subprocess.run(gradle_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print('Tests completed successfully.')
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f'Error running tests: {e}')
+        print(e.stderr)
+
 # Function to handle code migration and saving the results
 def migrate_code(github_repo, github_file_path, selected_model, extraction_functions):
-        
-    model_start_time = time.time()
     
-    # Construct the raw URL
+    model_start_time = time.time()
+
+    # Construct the raw URL to access the file from GitHub
     raw_url = f'https://raw.githubusercontent.com/{github_repo}/master/{github_file_path}'
 
     # Download the file content from GitHub
@@ -194,20 +235,19 @@ def migrate_code(github_repo, github_file_path, selected_model, extraction_funct
         # Determine the output folder based on the file path
         folder_name = get_folder_name(github_file_path)
         if folder_name:
-            output_folder = os.path.join('output', selected_model.split(' - ')[-1], 'src', folder_name)
+            output_folder = os.path.join('output', 'src', folder_name)
         else:
-            output_folder = os.path.join('output', selected_model.split(' - ')[-1])
+            output_folder = os.path.join('output', 'src')
 
         os.makedirs(output_folder, exist_ok=True)
 
-        # Generate a unique identifier for each file to avoid overwriting
-        unique_identifier = datetime.now().strftime('%Y%m%d%H%M%S%f')
-
-        # Determine the file extension based on the target language
+        # Determine the original file name and target language extension
+        original_file_name = os.path.basename(github_file_path)
+        file_name_without_extension, _ = os.path.splitext(original_file_name)
         target_language_extension = language_extensions.get(target_language, 'txt')
 
-        # Generate output file path
-        output_file_path = os.path.join(output_folder, f'migrated_code_{target_language}_{unique_identifier}_{os.path.basename(github_file_path)}.{target_language_extension}')
+        # Generate output file path using the original file name and target language extension
+        output_file_path = os.path.join(output_folder, f'{file_name_without_extension}.{target_language_extension}')
 
         # Save the migrated code to the unique file
         if migrated_code:
@@ -218,25 +258,13 @@ def migrate_code(github_repo, github_file_path, selected_model, extraction_funct
             print(f'No valid migrated code for {github_repo}/{github_file_path} using model {selected_model}')
 
         # Save the entire response JSON to a new JSON file
-        json_folder = os.path.join('output', 'json', selected_model.split(' - ')[-1], 'src')
+        json_folder = os.path.join('output', 'json', 'src')
         os.makedirs(json_folder, exist_ok=True)
-        json_file_path = os.path.join(json_folder, f'response_{os.path.basename(github_file_path)}_{unique_identifier}.json')
+        json_file_path = os.path.join(json_folder, f'response_{file_name_without_extension}.json')
         with open(json_file_path, 'w') as json_file:
             json.dump(response_json, json_file, indent=4)
 
         print(f'Response JSON for {github_repo}/{github_file_path} has been saved to {json_file_path}')
-
-        # Run SonarScanner to analyse the migrated code
-        sonar_scanner_command = (
-            'sonar-scanner.bat '
-            f'-D"sonar.projectKey={sonar_project_key}" '
-            '-D"sonar.sources=output" '  
-            '-D"sonar.host.url=http://localhost:9000" '
-            f'-D"sonar.token={sonar_token}"'
-        )
-
-        print('\nRunning SonarScanner...\n')
-        subprocess.run(sonar_scanner_command, shell=True, check=True)
 
         # Stop timer for the model
         model_end_time = time.time()
@@ -276,3 +304,9 @@ for model, time_taken in model_times.items():
 # Print summary
 print(f'\nAll requests completed in {total_time_minutes:.2f} minutes.')
 print(f'Total number of requests processed: {total_requests}')
+
+# Run SonarQube Scanner after all migrations are done
+run_sonar_scanner()
+
+# Run tests after SonarQube analysis
+run_tests()
