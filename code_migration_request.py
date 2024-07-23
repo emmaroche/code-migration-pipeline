@@ -1,5 +1,4 @@
 import os
-from dotenv import load_dotenv
 import requests
 import subprocess
 import json
@@ -8,6 +7,7 @@ import re
 import time
 
 # Load environment variables from .env file
+from dotenv import load_dotenv
 load_dotenv()
 
 # Retrieve environment variables
@@ -17,29 +17,17 @@ openai_api_key = os.getenv('OPENAI_API_KEY')
 source_language = os.getenv('SOURCE_LANGUAGE')
 target_language = os.getenv('TARGET_LANGUAGE')
 sonar_project_key = os.getenv('SONAR_PROJECT_KEY')
-sonar_host_url = os.getenv('SONAR_HOST_URL') 
+sonar_host_url = os.getenv('SONAR_HOST_URL')
 
 # Define file extension mappings for target languages
 language_extensions = {
     'kotlin': 'kt',
     'python': 'py',
-    'swift': 'swift',
     'typescript': 'ts',
 }
 
-# List of file paths to migrate from the repository
-repositories = [
-    {
-        "repo": "emmaroche/data-preparation",
-        "file_paths": [
-            # "code-artefacts/java/ShopV6.0/src/controllers/Store.java",
-            # "code-artefacts/java/ShopV6.0/src/utils/Utilities.java",
-            # "code-artefacts/java/ShopV6.0/src/utils/ScannerInput.java",
-            # "code-artefacts/java/ShopV6.0/src/models/Product.java",
-            "code-artefacts/java/ShopV6.0/src/main/Driver.java"
-        ]
-    },
-]
+# Source directory with .java files
+source_directory = "C:/Users/EmmaR/OneDrive/Documents/commons-text-1.12.0/org/apache/commons/test"
 
 # List of models to run sequentially
 models = [
@@ -54,20 +42,6 @@ models = [
     # 'Ollama - CodeGemma',
     # 'Ollama - CodeLlama'
 ]
-
-# Function to extract folder name from file path and create new folder if needed
-def get_folder_name(file_path):
-    # Split the file path by '/' to extract the folder name
-    parts = file_path.split('/')
-    # Get the second last part of the path (before the file with the content to migrate)
-    if len(parts) >= 2:
-        folder_name = parts[-2]
-        # Create a new folder if it doesn't exist
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
-        return folder_name
-    else:
-        return ''
 
 # Function to extract code and extra content based on regex
 def extract_code_and_extra_content(response_json):
@@ -179,120 +153,116 @@ def run_tests():
         print(f'Error running tests: {e}')
         print(e.stderr)
 
+        # Ensure the test_errors directory exists
+        os.makedirs('test_errors', exist_ok=True)
+
+        # Generate the log file name with a timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        error_log_filename = f'test_errors/test_errors_{timestamp}.log'
+
+        # Log the error with timestamp
+        with open(error_log_filename, 'a') as error_log:
+            error_log.write(f'{datetime.now()}: Error running tests: {e}\n')
+            error_log.write(f'{e.stderr}\n')
 # Function to handle code migration and saving the results
-def migrate_code(github_repo, github_file_path, selected_model, extraction_functions):
+def migrate_code(file_path, selected_model, extraction_functions):
     
     model_start_time = time.time()
 
-    # Construct the raw URL to access the file from GitHub
-    raw_url = f'https://raw.githubusercontent.com/{github_repo}/master/{github_file_path}'
+    with open(file_path, 'r') as file:
+        code_to_convert = file.read()
 
-    # Download the file content from GitHub
-    response = requests.get(raw_url)
-    if response.status_code == 200:
-        code_to_convert = response.text
-    else:
-        raise Exception(f'Failed to download the file from GitHub ({github_repo}/{github_file_path}). Status code: {response.status_code}')
-
-    # Define the prompt and selected model name
     prompt = (
-        f"Migrate the provided {source_language} code to {target_language} code."
-        "Ensure the functionality and compatibility are preserved."
-        "Keep the imports in the file path when migrating the code."
+        f"Migrate the provided {source_language} code to {target_language}, ensuring functionality and compatibility. "
+        # f"Preserve all necessary imports and dependencies from {source_language}. "
+        # f"Adjust for differences in syntax, such as type declarations, function definitions, and property accessors. "
+        # f"Convert all immutable properties val to mutable properties var only if reassignment is needed. Otherwise, keep them as val for better immutability practices. "
+        # f"Ensure proper handling of nullability, using {target_language}'s safe calls (?.) or non-null asserted calls (!!.) as appropriate. "
+        # f"Replace null checks with safe call operators (?.) and use the Elvis operator (?:) for providing default values where necessary. "
+        # f"Remove constructors in Kotlin objects since they are not allowed and refactor initialization logic if needed. "
+        # f"Convert Java static methods to Kotlin companion objects or top-level functions as appropriate. "
+        # f"Replace loops and conditional structures with idiomatic Kotlin constructs where applicable, such as using for-each loops or when expressions. "
+        # f"Refactor any utility classes or methods to take advantage of Kotlin's extension functions and higher-order functions. "
+        # f"Ensure proper usage of Kotlin collections and standard library functions to enhance readability and performance. "
+        # f"Ensure that Java collections such as HashSet are converted to the appropriate Kotlin collections, like Set, to avoid type mismatch errors. "
+        # f"Retain the original logic and structure of the code while adhering to {target_language}'s coding standards and best practices. "
+        # f"Test the converted code to ensure it functions as expected and address any compatibility issues."
+        # f"Remove code comments."
     )
 
-    # Request payload
+
     payload = {
         'model': selected_model,
         'prompt': prompt,
         'code': code_to_convert
     }
 
-    # POST request to the API endpoint
     response = requests.post(api_endpoint, json=payload)
 
-    # Checking if the request was successful
     if response.status_code == 200:
-        print(f'Model Used for {github_repo}/{github_file_path}: ', selected_model)
-        # Extract the response JSON
+        print(f'Model Used for {file_path}: ', selected_model)
         response_json = response.json()
 
-        # Get the extraction function based on the selected model
         extraction_function = extraction_functions.get(selected_model)
         if extraction_function is None:
             raise ValueError(f'No extraction function found for model: {selected_model}')
 
-        # Extract the migrated code and extra content from the JSON using the specified function
         migrated_code, extra_content = extraction_function(response_json)
-
-        # Update the response JSON
         response_json['migrated_code'] = migrated_code
         response_json['extra_content'] = extra_content
 
-        # Log the migrated code for debugging purposes
-        print(f'Migrated code for {github_repo}/{github_file_path}:\n{migrated_code}')
+        print(f'Migrated code for {file_path}:\n{migrated_code}')
 
-        # Determine the output folder based on the file path
-        folder_name = get_folder_name(github_file_path)
-        if folder_name:
-            output_folder = os.path.join('output', 'src', folder_name)
-        else:
-            output_folder = os.path.join('output', 'src')
-
+        output_folder = os.path.join('output', 'src')
         os.makedirs(output_folder, exist_ok=True)
 
-        # Determine the original file name and target language extension
-        original_file_name = os.path.basename(github_file_path)
+        original_file_name = os.path.basename(file_path)
         file_name_without_extension, _ = os.path.splitext(original_file_name)
         target_language_extension = language_extensions.get(target_language, 'txt')
-
-        # Generate output file path using the original file name and target language extension
         output_file_path = os.path.join(output_folder, f'{file_name_without_extension}.{target_language_extension}')
 
-        # Save the migrated code to the unique file
         if migrated_code:
             with open(output_file_path, 'w') as file:
                 file.write(migrated_code)
-            print(f'Migrated code for {github_repo}/{github_file_path} has been saved to {output_file_path}')
+            print(f'Migrated code for {file_path} has been saved to {output_file_path}')
         else:
-            print(f'No valid migrated code for {github_repo}/{github_file_path} using model {selected_model}')
+            print(f'No valid migrated code for {file_path}')
 
-        # Save the entire response JSON to a new JSON file
         json_folder = os.path.join('output', 'json', 'src')
         os.makedirs(json_folder, exist_ok=True)
         json_file_path = os.path.join(json_folder, f'response_{file_name_without_extension}.json')
         with open(json_file_path, 'w') as json_file:
             json.dump(response_json, json_file, indent=4)
 
-        print(f'Response JSON for {github_repo}/{github_file_path} has been saved to {json_file_path}')
+        print(f'Response JSON for {file_path} has been saved to {json_file_path}')
 
-        # Stop timer for the model
         model_end_time = time.time()
-        model_time = model_end_time - model_start_time
-        model_times[selected_model] = model_times.get(selected_model, 0) + model_time
+        model_execution_time = model_end_time - model_start_time
+        model_times[selected_model] = model_times.get(selected_model, 0) + model_execution_time
 
         return True
     else:
-        print(f'Error for {github_repo}/{github_file_path} using model {selected_model}: {response.text}')
+        print(f'Error for {file_path} using model {selected_model}: {response.text}')
         return False
 
-# Iterate over each model first, then each repository and file path
+# Function to handle migration of Java files from the source directory
+def migrate_files_from_directory(directory, selected_model, extraction_functions):
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.endswith('.java'):
+                file_path = os.path.join(root, file)
+                if migrate_code(file_path, selected_model, extraction_functions):
+                    global total_requests
+                    total_requests += 1
+
+# Main execution loop
 for selected_model in models:
-    for repo_info in repositories:
-        github_repo = repo_info['repo']
-        for github_file_path in repo_info['file_paths']:
-            extraction_function = extraction_functions.get(selected_model)
-            if extraction_function is None:
-                raise ValueError(f'No extraction function found for model: {selected_model}')
-            
-            if migrate_code(github_repo, github_file_path, selected_model, extraction_functions):
-                total_requests += 1
+    # Migrate files from the source directory
+    migrate_files_from_directory(source_directory, selected_model, extraction_functions)
 
 # Calculate total time taken
 end_time = time.time()
 total_time = end_time - start_time
-
-# Calculate total time taken in minutes
 total_time_minutes = total_time / 60.0
 
 # Print model times
@@ -306,7 +276,7 @@ print(f'\nAll requests completed in {total_time_minutes:.2f} minutes.')
 print(f'Total number of requests processed: {total_requests}')
 
 # Run SonarQube Scanner after all migrations are done
-run_sonar_scanner()
+# run_sonar_scanner()
 
 # Run tests after SonarQube analysis
 run_tests()

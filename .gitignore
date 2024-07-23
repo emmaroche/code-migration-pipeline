@@ -6,6 +6,8 @@ pom.xml
 build.gradle
 launch.json
 tasks.json
+test_errors/
+request.py
 # Gradle files
 .gradle/
 build/
