@@ -1,13 +1,15 @@
-output/
-.scannerwork/
-pom.xml
-.env
-.vscode
-build.gradle
-launch.json
-tasks.json
-test_errors/
-request.py
+# Node.js related files and directories
+node_modules/
+package.json
+package-lock.json
+jest.config.js
+tsconfig.json
+*.log
+
+# Build output
+dist/
+build/
+
 # Gradle files
 .gradle/
 build/
@@ -16,3 +18,23 @@ gradlew
 gradlew.bat
 gradle-wrapper.jar
 gradle-wrapper.properties
+build.gradle
+
+# Test and cache files
+*.tsbuildinfo
+*.cache
+test_errors/
+
+# IDE and editor-specific files
+.vscode/
+.idea/
+
+# Other files
+.env
+launch.json
+tasks.json
+pom.xml
+output/
+.scannerwork/
+request.py
+.vscode 
