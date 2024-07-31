@@ -115,10 +115,9 @@ def run_sonar_scanner():
     sonar_scanner_command = (
         f'sonar-scanner '
         f'-D"sonar.projectKey={sonar_project_key}" '
-        f'-D"sonar.sources=output" '
+        f'-D"sonar.sources=output/src,output/test" '  # Specify only the src directory for analysis
         f'-D"sonar.host.url={sonar_host_url}" '
         f'-D"sonar.token={sonar_token}" '
-        f'-D"sonar.exclusions=**/*.java" '
     )
 
     print('\nRunning SonarQube Scanner...\n')
@@ -133,31 +132,63 @@ def run_sonar_scanner():
 
 # Function to run tests (based on file extension) after code migration takes place
 def run_tests(file_extension):
+    # Ensure the test_results directory exists
+    os.makedirs('test_results', exist_ok=True)
+    
+    # Create a log filename with a timestamp
+    log_filename = f'test_results/test_results_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+    
     if file_extension == 'kt':
         gradle_script = 'C:/Users/EmmaR/OneDrive/Documents/Pipeline/langchain/gradlew.bat'
         gradle_command = f'{gradle_script} test'
         print('\nRunning Gradle tests...\n')
+        try:
+            result = subprocess.run(gradle_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            with open(log_filename, 'w') as log_file:
+                log_file.write('Gradle Test Results:\n')
+                log_file.write(result.stdout)  # Capture Gradle test results
+                if result.stderr:
+                    log_file.write('\nGradle Errors:\n')
+                    log_file.write(result.stderr)  # Capture Gradle errors
+            print(f'Gradle tests completed successfully. Results saved to {log_filename}')
+            return True
+        except subprocess.CalledProcessError as e:
+            with open(log_filename, 'w') as log_file:
+                log_file.write('Error running Gradle tests:\n')
+                log_file.write(e.stderr)
+            print(f'Error running Gradle tests. Details saved to {log_filename}')
+            return False
+
     elif file_extension == 'ts':
-        # Build TypeScript files before running tests
         npm_build_command = 'npm run build'
         npm_test_command = 'npm run test'
         print('\nBuilding TypeScript files...\n')
         try:
+            # Run the build command
             build_result = subprocess.run(npm_build_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print('Build completed successfully.')
-            print(build_result.stdout)
+            with open(log_filename, 'w') as log_file:
+                log_file.write('Build Results:\n')
+                log_file.write(build_result.stdout)  # Capture build results
+                if build_result.stderr:
+                    log_file.write('\nBuild Errors:\n')
+                    log_file.write(build_result.stderr)  # Capture build errors
+            print(f'Build completed successfully. Results saved to {log_filename}')
+            
             print('\nRunning npm tests...\n')
+            # Run the test command
             test_result = subprocess.run(npm_test_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print('Tests completed successfully.')
-            if test_result.stderr:
-                print('Test Results:\n', test_result.stderr) 
+            with open(log_filename, 'a') as log_file: 
+                log_file.write('\nTest Results and/or Errors:\n')
+                log_file.write(test_result.stderr)  # Captures both test results and errors from stderr
+            print(f'Tests completed successfully. Results saved to {log_filename}')
             return True
         except subprocess.CalledProcessError as e:
-            print(f'Error running build or tests: {e}')
-            print(e.stderr)
-            log_test_error(e)
+            with open(log_filename, 'a') as log_file:  
+                log_file.write('Error running build or tests:\n')
+                log_file.write(e.stderr)
+            print(f'Error running build or tests. Details saved to {log_filename}')
             return False
-
+        
 # Function to log errors that occur in migration files when attempting to run tests
 def log_test_error(e):
     os.makedirs('test_errors', exist_ok=True)
@@ -329,7 +360,7 @@ def main():
     print(f"Total execution time: {total_time_minutes:.2f} minutes")
 
     print("\nRunning SonarQube analysis...\n")
-    # run_sonar_scanner()
+    run_sonar_scanner()
 
 if __name__ == "__main__":
     main()
