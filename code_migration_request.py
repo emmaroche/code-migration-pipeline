@@ -33,15 +33,14 @@ source_directory = "C:/Users/EmmaR/OneDrive/Documents/commons-text-1.12.0/org/ap
 # List of models to use for code migration
 models = [
     # 'VertexAI - PaLM 2',
-    'VertexAI - Gemini Pro',
+    # 'VertexAI - Gemini Pro',
     # 'VertexAI - Codey',
     # 'OpenAI - GPT-3.5 Turbo',
     # 'OpenAI - GPT-4o',
     # 'OpenAI - GPT-4 Turbo',
     # 'Ollama - Llama 3',
-    # 'Ollama - Llama 2',
     # 'Ollama - CodeGemma',
-    # 'Ollama - CodeLlama'
+    'Ollama - CodeLlama'
 ]
 
 # Maximum retries for migration and testing processes
@@ -99,14 +98,12 @@ extraction_functions = {
     'OpenAI - GPT-3.5 Turbo': extract_code_combined, 
     'OpenAI - GPT-4o': extract_code_combined, 
     'OpenAI - GPT-4 Turbo': extract_code_combined,  
-    'Ollama - Llama 2': extract_code_combined, 
     'Ollama - Llama 3': extract_code_combined,  
     'Ollama - CodeGemma': extract_code_combined, 
     'Ollama - CodeLlama': extract_code_combined
 }
 
 # Timer variables for tracking model execution time
-start_time = time.time()
 total_requests = 0
 model_times = {}
 
@@ -115,226 +112,153 @@ def run_sonar_scanner():
     sonar_scanner_command = (
         f'sonar-scanner '
         f'-D"sonar.projectKey={sonar_project_key}" '
-        f'-D"sonar.sources=output/src,output/test" '  # Specify only the src directory for analysis
+        f'-D"sonar.sources=output/src,output/test" '
         f'-D"sonar.host.url={sonar_host_url}" '
         f'-D"sonar.token={sonar_token}" '
     )
-
-    print('\nRunning SonarQube Scanner...\n')
-
     try:
         result = subprocess.run(sonar_scanner_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print('SonarQube analysis completed successfully.')
-        print(result.stdout)
+        return f'SonarQube analysis completed successfully.\n{result.stdout}'
     except subprocess.CalledProcessError as e:
-        print(f'Error running SonarQube Scanner: {e}')
-        print(e.stderr)
+        return f'Error running SonarQube Scanner:\n{e}\n{e.stderr}'
 
 # Function to run tests (based on file extension) after code migration takes place
 def run_tests(file_extension):
-    # Ensure the test_results directory exists
-    os.makedirs('test_results', exist_ok=True)
-    
-    # Create a log filename with a timestamp
-    log_filename = f'test_results/test_results_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
-    
-    if file_extension == 'kt':
-        gradle_script = 'C:/Users/EmmaR/OneDrive/Documents/Pipeline/langchain/gradlew.bat'
-        gradle_command = f'{gradle_script} test'
-        print('\nRunning Gradle tests...\n')
-        try:
-            result = subprocess.run(gradle_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            with open(log_filename, 'w') as log_file:
+    log_filename = f'output/test_report/migration_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+
+    try:
+        if file_extension == 'kt':
+            gradle_script = 'C:/Users/EmmaR/OneDrive/Documents/Pipeline/langchain/gradlew.bat'
+            gradle_command = f'{gradle_script} test'
+            result = subprocess.run(gradle_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
+            
+            with open(log_filename, 'a', encoding='utf-8') as log_file:
                 log_file.write('Gradle Test Results:\n')
-                log_file.write(result.stdout)  # Capture Gradle test results
+                log_file.write(result.stdout)
                 if result.stderr:
                     log_file.write('\nGradle Errors:\n')
-                    log_file.write(result.stderr)  # Capture Gradle errors
-            print(f'Gradle tests completed successfully. Results saved to {log_filename}')
-            return True
-        except subprocess.CalledProcessError as e:
-            with open(log_filename, 'w') as log_file:
-                log_file.write('Error running Gradle tests:\n')
-                log_file.write(e.stderr)
-            print(f'Error running Gradle tests. Details saved to {log_filename}')
-            return False
-
-    elif file_extension == 'ts':
-        npm_build_command = 'npm run build'
-        npm_test_command = 'npm run test'
-        print('\nBuilding TypeScript files...\n')
-        try:
-            # Run the build command
-            build_result = subprocess.run(npm_build_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            with open(log_filename, 'w') as log_file:
-                log_file.write('Build Results:\n')
-                log_file.write(build_result.stdout)  # Capture build results
-                if build_result.stderr:
-                    log_file.write('\nBuild Errors:\n')
-                    log_file.write(build_result.stderr)  # Capture build errors
-            print(f'Build completed successfully. Results saved to {log_filename}')
+                    log_file.write(result.stderr)
             
-            print('\nRunning npm tests...\n')
-            # Run the test command
-            test_result = subprocess.run(npm_test_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            with open(log_filename, 'a') as log_file: 
-                log_file.write('\nTest Results and/or Errors:\n')
-                log_file.write(test_result.stderr)  # Captures both test results and errors from stderr
-            print(f'Tests completed successfully. Results saved to {log_filename}')
-            return True
-        except subprocess.CalledProcessError as e:
-            with open(log_filename, 'a') as log_file:  
-                log_file.write('Error running build or tests:\n')
-                log_file.write(e.stderr)
-            print(f'Error running build or tests. Details saved to {log_filename}')
-            return False
-        
-# Function to log errors that occur in migration files when attempting to run tests
-def log_test_error(e):
-    os.makedirs('test_errors', exist_ok=True)
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    error_log_filename = f'test_errors/test_errors_{timestamp}.log'
+            return result.returncode == 0
 
-    with open(error_log_filename, 'a') as error_log:
-        error_log.write(f'{datetime.now()}: Error running tests: {e}\n')
-        error_log.write(f'{e.stderr}\n')
+        elif file_extension == 'ts':
+            # npm_build_command = 'npm run build'
+            npm_test_command = 'npm test'
+            
+            # build_result = subprocess.run(npm_build_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
+            
+            # with open(log_filename, 'a', encoding='utf-8') as log_file:
+            #     log_file.write('Build Results:\n')
+            #     log_file.write(build_result.stdout)
+            #     if build_result.stderr:
+            #         log_file.write('\nBuild Errors:\n')
+            #         log_file.write(build_result.stderr)
+            
+            test_result = subprocess.run(npm_test_command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
 
-# Function to get detailed error information from log files
-def get_detailed_error_info():
-    log_files = glob.glob('test_errors/test_errors_*.log')
-    
-    if not log_files:
-        return "No error logs found."
-    
-    log_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-    latest_log_file = log_files[0]
-    
-    with open(latest_log_file, 'r') as log_file:
-        log_contents = log_file.read()
-    
-    # Example of extracting error details
-    error_details = re.findall(r'(?<=ERROR: ).*', log_contents)
-    if not error_details:
-        return "No specific error details found."
+            with open(log_filename, 'a', encoding='utf-8') as log_file:
+                log_file.write('\nTest Results:\n')
+                log_file.write(test_result.stdout)
+                if test_result.stderr:
+                    log_file.write('\nTest Errors:\n')
+                    log_file.write(test_result.stderr)
+                if test_result.returncode == 0:
+                    log_file.write('\nTests Passed Successfully.\n')
+                else:
+                    log_file.write('\nSome Tests Failed.\n')
+            
+            return test_result.returncode == 0
 
-    # Create a summary of errors
-    error_summary = "\n".join(error_details)
-    error_info = f"Here are the errors encountered during previous migration attempts:\n{error_summary}"
-    
-    return error_info
+    except Exception as e:
+        # Capture output and error before the exception occurs
+        with open(log_filename, 'a', encoding='utf-8') as log_file:
+            log_file.write('\nUnexpected error occurred:\n')
+            log_file.write(f'{e}\n')
 
-# Function to handle the code migration process
-def migrate_code(file_path, selected_model, extraction_functions, retry_attempt=0, error_info=""):
+            # If subprocess outputs are captured before the exception
+            if 'test_result' in locals():
+                log_file.write('\nCaptured Test Results:\n')
+                log_file.write(test_result.stdout)
+                log_file.write('\nCaptured Test Errors:\n')
+                log_file.write(test_result.stderr)
+            
+        print(f'Unexpected error occurred. Details saved to {log_filename}')
+        return False  # Indicate that an error occurred
+
+# Function to migrate code and handle errors
+def migrate_code(file_path, selected_model, extraction_functions, log_file):
     model_start_time = time.time()
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            code_to_convert = file.read()
 
-    with open(file_path, 'r') as file:
-        code_to_convert = file.read()
+        prompt = (
+            f"Migrate the provided {source_language} code to {target_language}. "
+            f"Preserve all original necessary imports and dependencies from {source_language}. "
+            f"Adjust for differences in syntax and ensure proper handling of nullability. "
+        )
 
-    # Prompt for model that includes error information for the model if multiple attempts are needed
-    prompt = (
-        f"Migrate the provided {source_language} code to {target_language}. "
-        f"Preserve all necessary imports and dependencies from {source_language}. "
-        f"Adjust for differences in syntax and ensure proper handling of nullability. "
-        f"Address any compatibility issues that may arise. "
-        f"Here are the errors encountered during previous migration attempts:\n"
-        f"{error_info}\n"
-        f"Please focus on these specific issues and make necessary corrections."
-    )
+        payload = {
+            'model': selected_model,
+            'prompt': prompt,
+            'code': code_to_convert
+        }
 
-    payload = {
-        'model': selected_model,
-        'prompt': prompt,
-        'code': code_to_convert
-    }
-
-    response = requests.post(api_endpoint, json=payload)
-
-    if response.status_code == 200:
-        print(f'Model Used for {file_path}: ', selected_model)
-        response_json = response.json()
+        response = requests.post(api_endpoint, json=payload)
+        response.raise_for_status()
 
         extraction_function = extraction_functions.get(selected_model)
         if extraction_function is None:
             raise ValueError(f'No extraction function found for model: {selected_model}')
 
+        response_json = response.json()
         migrated_code, extra_content = extraction_function(response_json)
         response_json['migrated_code'] = migrated_code
         response_json['extra_content'] = extra_content
 
-        print(f'Migrated code for {file_path}:\n{migrated_code}')
-
-        output_folder = os.path.join('output', 'src')
-        os.makedirs(output_folder, exist_ok=True)
-
-        original_file_name = os.path.basename(file_path)
-        file_name_without_extension, _ = os.path.splitext(original_file_name)
-        target_language_extension = language_extensions.get(target_language, 'txt')
-        output_file_path = os.path.join(output_folder, f'{file_name_without_extension}.{target_language_extension}')
-
         if migrated_code:
-            with open(output_file_path, 'w') as file:
+            file_name_without_extension = os.path.splitext(os.path.basename(file_path))[0]
+            target_language_extension = language_extensions.get(target_language, 'txt')
+            output_file_path = os.path.join('output', 'src', f'{file_name_without_extension}.{target_language_extension}')
+
+            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+            with open(output_file_path, 'w', encoding='utf-8') as file:
                 file.write(migrated_code)
-            print(f'Migrated code for {file_path} has been saved to {output_file_path}')
+            
+            log_file.write(f'{datetime.now()}: Migrated code for {file_path} saved to {output_file_path}.\n')
+
+            json_file_path = os.path.join('output', 'json', 'src', f'response_{file_name_without_extension}.json')
+            os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
+            with open(json_file_path, 'w', encoding='utf-8') as json_file:
+                json.dump(response_json, json_file, indent=4)
+            
+            log_file.write(f'{datetime.now()}: Response JSON for {file_path} saved to {json_file_path}.\n')
+
+            model_execution_time = time.time() - model_start_time
+            model_times[selected_model] = model_times.get(selected_model, 0) + model_execution_time
+            log_file.write(f'{datetime.now()}: Model {selected_model} processed {file_path}. Time taken: {model_execution_time:.2f} seconds\n')
+
+            return True
         else:
-            print(f'No valid migrated code for {file_path}')
-
-        json_folder = os.path.join('output', 'json', 'src')
-        os.makedirs(json_folder, exist_ok=True)
-        json_file_path = os.path.join(json_folder, f'response_{file_name_without_extension}.json')
-        with open(json_file_path, 'w') as json_file:
-            json.dump(response_json, json_file, indent=4)
-
-        print(f'Response JSON for {file_path} has been saved to {json_file_path}')
-
-        model_end_time = time.time()
-        model_execution_time = model_end_time - model_start_time
-        model_times[selected_model] = model_times.get(selected_model, 0) + model_execution_time
-
-        return True
-    else:
-        print(f'Error for {file_path} using model {selected_model}: {response.text}')
-        if retry_attempt < MAX_RETRIES:
-            print(f"Retrying migration for {file_path} (Attempt {retry_attempt + 1})...")
-            return migrate_code(file_path, selected_model, extraction_functions, retry_attempt + 1, error_info)
+            log_file.write(f'{datetime.now()}: No valid migrated code for {file_path} using model {selected_model}.\n')
+            return False
+    except Exception as e:
+        error_message = f'{datetime.now()}: Error for {file_path} using model {selected_model}: {e}'
+        log_file.write(error_message + '\n')
+        if hasattr(e, 'response') and e.response is not None:
+            log_file.write(f'{e.response.text}\n')
         return False
 
-# Function to retry migration and testing processes if there are errors
-def retry_migration_and_tests(file_path, selected_model, extraction_functions):
-    retry_attempt = 0
-    while retry_attempt < MAX_RETRIES:
-        print(f"Attempt {retry_attempt + 1} for {file_path}")
-
-        # Migrate code with the model
-        if migrate_code(file_path, selected_model, extraction_functions, retry_attempt):
-            global total_requests
-            total_requests += 1
-
-            # Re-run tests after migration
-            file_extension = language_extensions.get(target_language)
-            if run_tests(file_extension):
-                print(f"Tests passed for {file_path} on attempt {retry_attempt + 1}")
-                return True
-            else:
-                # Capture and retry with new error details
-                error_info = get_detailed_error_info()
-                print(f"Tests failed. Error info: {error_info}")
-                print(f"Retrying migration with updated error info (Attempt {retry_attempt + 1})...")
-                retry_attempt += 1
-        else:
-            print(f"Migration failed for {file_path}. Skipping tests...")
-            break
-
-    return False
-
 # Function to migrate all .java and .js files from a directory
-def migrate_files_from_directory(directory, selected_model, extraction_functions):
-    print(f"Scanning directory: {directory}")  
+def migrate_files_from_directory(directory, selected_model, extraction_functions, log_file):
     for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith('.java') or file.endswith('.js'):
                 file_path = os.path.join(root, file)
-                print(f"Found file: {file_path}") 
-                retry_migration_and_tests(file_path, selected_model, extraction_functions)
+                if migrate_code(file_path, selected_model, extraction_functions, log_file):
+                    global total_requests
+                    total_requests += 1
 
 # Main function to run the migration process
 def main():
@@ -344,23 +268,43 @@ def main():
 
     start_time = time.time()
 
-    for selected_model in models:
-        print(f"Running model: {selected_model}")
-        migrate_files_from_directory(source_directory, selected_model, extraction_functions)
+    # Log file for the entire script execution
+    log_filename = f'output/migration_logs/migration_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+    with open(log_filename, 'w', encoding='utf-8') as log_file:
 
-    end_time = time.time()
-    total_time = end_time - start_time
-    total_time_minutes = total_time / 60.0
+        # Migrate all files
+        for selected_model in models:
+            log_file.write(f"Running model: {selected_model}\n")
+            migrate_files_from_directory(source_directory, selected_model, extraction_functions, log_file)
 
-    print("\nModel execution times:")
-    for model, execution_time in model_times.items():
-        print(f"{model}: {execution_time / 60:.2f} minutes")
+        # Determine the file extension for tests
+        file_extension = language_extensions.get(target_language)
+        
+        # Run tests after all migrations are complete
+        if file_extension:
+            log_file.write("\nRunning tests...\n")
+            if run_tests(file_extension):
+                log_file.write("All tests passed successfully.\n")
+            else:
+                log_file.write("Some tests failed. Check the test results for details.\n")
+        
+        # Run SonarQube analysis
+        log_file.write("\nRunning SonarQube analysis...\n")
+        sonar_result = run_sonar_scanner()
+        log_file.write(sonar_result + '\n')
 
-    print(f"Total number of requests processed: {total_requests}")
-    print(f"Total execution time: {total_time_minutes:.2f} minutes")
+        end_time = time.time()
+        total_time_minutes = (end_time - start_time) / 60.0
 
-    print("\nRunning SonarQube analysis...\n")
-    run_sonar_scanner()
+        log_file.write("\nModel execution times:\n")
+        for model, execution_time in model_times.items():
+            if execution_time < 60:
+                log_file.write(f"{model}: {execution_time:.2f} seconds\n")
+            else:
+                log_file.write(f"{model}: {execution_time / 60:.2f} minutes\n")
+
+        log_file.write(f"Total number of requests processed: {total_requests}\n")
+        log_file.write(f"Total execution time: {total_time_minutes:.2f} minutes\n")
 
 if __name__ == "__main__":
     main()
