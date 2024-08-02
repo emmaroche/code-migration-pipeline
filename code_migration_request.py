@@ -5,10 +5,9 @@ import json
 from datetime import datetime
 import re
 import time
-import glob
+from dotenv import load_dotenv
 
 # Load environment variables from .env file
-from dotenv import load_dotenv
 load_dotenv()
 
 # Retrieve environment variables
@@ -27,20 +26,26 @@ language_extensions = {
     'typescript': 'ts',
 }
 
-# Source directory with files to be migrated
-source_directory = "C:/Users/EmmaR/OneDrive/Documents/commons-text-1.12.0/org/apache/commons/test"
+# List of source directories to migrate from
+source_directories = [
+    "C:/Users/EmmaR/OneDrive/Documents/commons-text-1.12.0/org/apache/commons/test/Queue",
+    "C:/Users/EmmaR/OneDrive/Documents/commons-text-1.12.0/org/apache/commons/test/Tree",
+    "C:/Users/EmmaR/OneDrive/Documents/commons-text-1.12.0/org/apache/commons/test/Vectors",
+    "C:/Users/EmmaR/OneDrive/Documents/commons-text-1.12.0/org/apache/commons/test/Graph",
+    "C:/Users/EmmaR/OneDrive/Documents/commons-text-1.12.0/org/apache/commons/test/Heap",
+]
 
 # List of models to use for code migration
 models = [
     # 'VertexAI - PaLM 2',
-    # 'VertexAI - Gemini Pro',
+    'VertexAI - Gemini Pro',
     # 'VertexAI - Codey',
     # 'OpenAI - GPT-3.5 Turbo',
     # 'OpenAI - GPT-4o',
     # 'OpenAI - GPT-4 Turbo',
     # 'Ollama - Llama 3',
     # 'Ollama - CodeGemma',
-    'Ollama - CodeLlama'
+    # 'Ollama - CodeLlama'
 ]
 
 # Maximum retries for migration and testing processes
@@ -142,17 +147,7 @@ def run_tests(file_extension):
             return result.returncode == 0
 
         elif file_extension == 'ts':
-            # npm_build_command = 'npm run build'
             npm_test_command = 'npm test'
-            
-            # build_result = subprocess.run(npm_build_command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
-            
-            # with open(log_filename, 'a', encoding='utf-8') as log_file:
-            #     log_file.write('Build Results:\n')
-            #     log_file.write(build_result.stdout)
-            #     if build_result.stderr:
-            #         log_file.write('\nBuild Errors:\n')
-            #         log_file.write(build_result.stderr)
             
             test_result = subprocess.run(npm_test_command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
 
@@ -170,12 +165,10 @@ def run_tests(file_extension):
             return test_result.returncode == 0
 
     except Exception as e:
-        # Capture output and error before the exception occurs
         with open(log_filename, 'a', encoding='utf-8') as log_file:
             log_file.write('\nUnexpected error occurred:\n')
             log_file.write(f'{e}\n')
 
-            # If subprocess outputs are captured before the exception
             if 'test_result' in locals():
                 log_file.write('\nCaptured Test Results:\n')
                 log_file.write(test_result.stdout)
@@ -183,7 +176,7 @@ def run_tests(file_extension):
                 log_file.write(test_result.stderr)
             
         print(f'Unexpected error occurred. Details saved to {log_filename}')
-        return False  # Indicate that an error occurred
+        return False
 
 # Function to migrate code and handle errors
 def migrate_code(file_path, selected_model, extraction_functions, log_file):
@@ -194,9 +187,7 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
             code_to_convert = file.read()
 
         prompt = (
-            f"Migrate the provided {source_language} code to {target_language}. "
-            f"Preserve all original necessary imports and dependencies from {source_language}. "
-            f"Adjust for differences in syntax and ensure proper handling of nullability. "
+            f"Migrate the provided {source_language} code to {target_language}. Keep all important imports and dependencies from {source_language} only if they exist. Adjust for syntax differences and handle nullability properly. Ensure the migration is error-free."
         )
 
         payload = {
@@ -220,16 +211,25 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
         if migrated_code:
             file_name_without_extension = os.path.splitext(os.path.basename(file_path))[0]
             target_language_extension = language_extensions.get(target_language, 'txt')
-            output_file_path = os.path.join('output', 'src', f'{file_name_without_extension}.{target_language_extension}')
 
-            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+            # Compute the last directory name from the source path
+            source_directory = os.path.dirname(file_path)
+            last_directory_name = os.path.basename(source_directory)
+
+            # Define the output path based on the last directory name
+            output_directory = os.path.join('output', 'src', last_directory_name)
+            os.makedirs(output_directory, exist_ok=True)
+            
+            output_file_path = os.path.join(output_directory, file_name_without_extension + '.' + target_language_extension)
             with open(output_file_path, 'w', encoding='utf-8') as file:
                 file.write(migrated_code)
             
             log_file.write(f'{datetime.now()}: Migrated code for {file_path} saved to {output_file_path}.\n')
 
-            json_file_path = os.path.join('output', 'json', 'src', f'response_{file_name_without_extension}.json')
-            os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
+            json_directory = os.path.join('output', 'json', 'src', last_directory_name)
+            os.makedirs(json_directory, exist_ok=True)
+            
+            json_file_path = os.path.join(json_directory, f'response_{file_name_without_extension}.json')
             with open(json_file_path, 'w', encoding='utf-8') as json_file:
                 json.dump(response_json, json_file, indent=4)
             
@@ -272,10 +272,11 @@ def main():
     log_filename = f'output/migration_logs/migration_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
     with open(log_filename, 'w', encoding='utf-8') as log_file:
 
-        # Migrate all files
+        # Migrate all files from each source directory
         for selected_model in models:
             log_file.write(f"Running model: {selected_model}\n")
-            migrate_files_from_directory(source_directory, selected_model, extraction_functions, log_file)
+            for source_directory in source_directories:
+                migrate_files_from_directory(source_directory, selected_model, extraction_functions, log_file)
 
         # Determine the file extension for tests
         file_extension = language_extensions.get(target_language)

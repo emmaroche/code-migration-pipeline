@@ -38,3 +38,4 @@ output/
 .scannerwork/
 request.py
 .vscode 
+babel.config.js
