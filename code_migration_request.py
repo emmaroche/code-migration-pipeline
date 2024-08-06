@@ -38,8 +38,8 @@ source_directories = [
 # List of models to use for code migration
 models = [
     # 'VertexAI - PaLM 2',
-    'VertexAI - Gemini Pro',
-    # 'VertexAI - Codey',
+    # 'VertexAI - Gemini Pro',
+    'VertexAI - Codey',
     # 'OpenAI - GPT-3.5 Turbo',
     # 'OpenAI - GPT-4o',
     # 'OpenAI - GPT-4 Turbo',
@@ -56,15 +56,24 @@ def extract_code_and_extra_content(response_json):
     migrated_code = response_json.get('migrated_code', '')
     extra_content = response_json.get('extra_content', '')
 
-    # Extract code block using Markdown-style code fences
-    code_block_match = re.search(rf'```{target_language}\n([\s\S]*?)\n```', migrated_code, re.IGNORECASE)
-    if code_block_match:
-        migrated_code = code_block_match.group(1).strip()
-    else:
-        # Fallback to extracting code block with single quotes
-        code_block_match = re.search(rf"'''{target_language}\n([\s\S]*)", migrated_code, re.IGNORECASE)
+    if not target_language:
+        # When no target language is specified, ignore content before '''
+        code_block_match = re.search(r"'''([\s\S]*?)'''", migrated_code, re.IGNORECASE)
         if code_block_match:
             migrated_code = code_block_match.group(1).strip()
+        else:
+            code_block_match = re.search(r'```([\s\S]*?)```', migrated_code, re.IGNORECASE)
+            if code_block_match:
+                migrated_code = code_block_match.group(1).strip()
+    else:
+        # Handle specific case for target_language
+        code_block_match = re.search(rf"'''{target_language}\n([\s\S]*?)'''", migrated_code, re.IGNORECASE)
+        if code_block_match:
+            migrated_code = code_block_match.group(1).strip()
+        else:
+            code_block_match = re.search(rf'```{target_language}\n([\s\S]*?)\n```', migrated_code, re.IGNORECASE)
+            if code_block_match:
+                migrated_code = code_block_match.group(1).strip()
 
     return migrated_code, extra_content
 
@@ -187,8 +196,19 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
             code_to_convert = file.read()
 
         prompt = (
-            f"Migrate the provided {source_language} code to {target_language}. Keep all important imports and dependencies from {source_language} only if they exist. Adjust for syntax differences and handle nullability properly. Ensure the migration is error-free."
+            f"Migrate the provided {source_language} code to {target_language}."
         )
+
+        # prompt = (
+        #         f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
+        #         f"1. If they exist, retain all important imports and dependencies from {source_language}. Adjust their paths and syntax for {target_language}.\n"
+        #         f"2. Handle type declarations and generics properly. Ensure all types are correctly defined in {target_language}.\n"
+        #         f"3. Adjust syntax differences between {source_language} and {target_language}. Ensure correct usage of language-specific features.\n"
+        #         f"4. For TypeScript, handle type assertions, generics, and private fields accurately. Replace 'private' keyword with '#' for private fields.\n"
+        # )
+
+        # Log the prompt used for migration
+        log_file.write(f'{datetime.now()}: Using prompt: {prompt}\n')
 
         payload = {
             'model': selected_model,
