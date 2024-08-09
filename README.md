@@ -4,7 +4,7 @@ This repository contains the code for my dissertation's Code Migration Pipeline.
 
 ## Current Features
 
-- **Code Migration**: Facilitates migration of code between different programming languages (e.g., Javascript to Python, Java to Kotlin, etc.)
+- **Code Migration**: Facilitates migration of Javascript to TypeScript and Java to Kotlin.
 
 - **Model Integration**: Incorporates AI models developed by OpenAI, VertexAI, and Ollama (e.g., GPT-3.5 Turbo, Gemini Pro, Llama 3, etc.)
 
