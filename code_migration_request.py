@@ -209,44 +209,28 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
             code_to_convert = file.read()
 
 
-        # prompt = (
-        #     f"Convert the provided {source_language} code to {target_language}, ensuring that all standard imports remain unchanged. Do not migrate the package declaration."
-        # )
-
-        # prompt = (
-        #     f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
-        #     f"1. Keep the package import from each file for the purposes of this migration"
-        #     f"2. Adjust all other important imports and dependencies from {source_language} to match {target_language}'s syntax and structure.\n"
-        #     f"3. Handle static methods and fields by using Kotlin's `@JvmStatic` annotation. Use companion objects to maintain static-like behavior.\n"
-        #     f"4. Adjust access modifiers and collections. Ensure that Java's access levels (`public`, `protected`, `private`) are correctly translated into Kotlin's visibility modifiers.\n"
-        #     f"5. Ensure that all mutable properties in Kotlin are declared with var instead of val.\n"
-        # )
-
-        # prompt = (
-        #     f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
-        #     f"1. Keep the package imports from each file.\n"
-        #     f"2. Adjust all other important imports and dependencies from {source_language} to match {target_language}'s syntax and structure. Ensure that all required libraries and packages are correctly imported and configured in your project.\n"
-        #     f"3. Handle static methods and fields by using `{target_language}`'s equivalent annotations and constructs. For Kotlin, use the `@JvmStatic` annotation and `companion object` to maintain static-like behavior.\n"
-        #     f"4. Adjust access modifiers and visibility levels. Ensure that `{source_language}`'s access levels (`public`, `protected`, `private`) are correctly translated into `{target_language}`'s visibility modifiers.\n"
-        #     f"5. Ensure that all mutable properties in `{target_language}` are declared with `var`."
-        #     f"6. Verify that all referenced classes and methods are correctly imported and accessible. If you encounter unresolved references, ensure that the appropriate imports are added and that the code is correctly migrated.\n"
-        #     f"7. Ensure constructors and methods in `{target_language}` match the required signatures and visibility as in `{source_language}`. Handle any overload resolution issues by confirming the correct method or constructor is used.\n"
-        # )
-        
+        # Simple prompt for Java to Kotlin and JavaScript to TypeScript
         prompt = (
-            "Migrate ALL the provided Java code to Kotlin and keep the functionality the same. Follow these instructions for an error-free migration:\n"
-            "\n"
-            "1. Retain all package imports and adapt other imports from Java to Kotlin's syntax.\n"
-            "2. Handle static methods and fields in Kotlin using `@JvmStatic` and `companion object`.\n"
-            "3. Translate Java access modifiers (`public`, `protected`, `private`) to Kotlin visibility modifiers.\n"
-            "4. Use `var` for mutable properties in Kotlin.\n"
-            "5. Make all properties and their setters public in Kotlin, regardless of their access level in Java. Ensure that getters and setters do not cause method signature conflicts.\n"
-            "6. Ensure that all function calls are correctly translated from Java to Kotlin. Verify that function invocations and variable assignments are correct and that the syntax matches Kotlin’s expectations.\n"
-            "7. Verify that all referenced classes, methods, and variables are properly migrated and imported. Ensure that functions are invoked properly and variables are used as expected in the Kotlin code.\n"
-            "8. Ensure constructors and method signatures in Kotlin match those in Java. Avoid naming conflicts by ensuring methods have unique names and signatures.\n"
-            "\n"
-            "Provide clear and correctly formatted Kotlin code, avoiding unresolved references, syntax errors, and incorrect function invocations."
+            f"Migrate the provided {source_language} code to {target_language}, ensuring that all used imports remain unchanged."
         )
+
+        # Complex prompt for Java to Kotlin
+
+        # prompt = (
+        #     "Migrate ALL the provided Java code to Kotlin and keep the functionality the same. Follow these instructions for an error-free migration:\n"
+        #     "\n"
+        #     "1. Retain all package imports and adapt other imports from Java to Kotlin's syntax.\n"
+        #     "2. Handle static methods and fields in Kotlin using `@JvmStatic` and `companion object`.\n"
+        #     "4. Use `var` for mutable properties in Kotlin.\n"
+        #     "5. Make all properties and their setters public in Kotlin, regardless of their access level in Java. Ensure that getters and setters do not cause method signature conflicts.\n"
+        #     "6. Ensure that all function calls are correctly translated from Java to Kotlin. Verify that function invocations and variable assignments are correct and that the syntax matches Kotlin’s expectations.\n"
+        #     "7. Verify that all referenced classes, methods, and variables are properly migrated and imported. Ensure that functions are invoked properly and variables are used as expected in the Kotlin code.\n"
+        #     "8. Do not manually define getters and setters. Rely on Kotlin's autogenerated methods to avoid conflicts.\n"
+        #     "\n"
+        #     "Provide clear and correctly formatted Kotlin code, avoiding unresolved references, syntax errors, and incorrect function invocations."
+        # )
+
+        # Complex prompt for JavaScript to TypeScript
 
         # prompt = (
         #         f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
