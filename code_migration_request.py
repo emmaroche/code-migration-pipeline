@@ -37,11 +37,11 @@ models = [
     # 'VertexAI - Gemini Pro',
     # 'VertexAI - Codey',
     # 'OpenAI - GPT-3.5 Turbo',
-    'OpenAI - GPT-4o',
+    # 'OpenAI - GPT-4o',
     # 'OpenAI - GPT-4 Turbo',
     # 'Ollama - Llama 3',
     # 'Ollama - CodeGemma',
-    # 'Ollama - CodeLlama'
+    'Ollama - CodeLlama'
 ]
 
 # Maximum retries for migration and testing processes
@@ -210,9 +210,13 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
 
 
         # Simple prompt for Java to Kotlin and JavaScript to TypeScript
-        prompt = (
-            f"Migrate the provided {source_language} code to {target_language}, ensuring that all used imports remain unchanged."
-        )
+        # prompt = (
+        #     f"Migrate the provided {source_language} code to {target_language}, ensuring that all used imports remain unchanged."
+        # )
+
+        # prompt = (
+        #     f"Migrate the provided code from {source_language} to {target_language}. Ensure that all relevant import statements and require calls use the format `.../.../src/` at the start of the original paths, for example: ../schemas/user.schema.js migrates to ../../src/schemas/user.schema.ts."
+        # )
 
         # Complex prompt for Java to Kotlin
 
@@ -230,15 +234,26 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
         #     "Provide clear and correctly formatted Kotlin code, avoiding unresolved references, syntax errors, and incorrect function invocations."
         # )
 
-        # Complex prompt for JavaScript to TypeScript
+        # Complex prompts for JavaScript to TypeScript
 
         # prompt = (
         #         f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
-        #         f"1. If they exist, retain all important imports and dependencies from {source_language}. Adjust their paths and syntax for {target_language}.\n"
+        #         f"1. If they exist, retain all important imports and dependencies from {source_language}. Ensure that all relevant import statements and require calls use the format `.../.../src/` at the start of the original paths, for example: ../schemas/user.schema.js migrates to ../../src/schemas/user.schema.ts.\n"
         #         f"2. Handle type declarations and generics properly. Ensure all types are correctly defined in {target_language}.\n"
         #         f"3. Adjust syntax differences between {source_language} and {target_language}. Ensure correct usage of language-specific features.\n"
         #         f"4. For TypeScript, handle type assertions, generics, and private fields accurately. Replace 'private' keyword with '#' for private fields.\n"
         # )
+
+        prompt = (
+            f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
+            f"1. If they exist, retain all important imports and dependencies from {source_language}. Ensure that all relevant import statements and require calls use the format `.../.../src/` at the start of the original paths, for example: ../schemas/user.schema.js migrates to ../../src/schemas/user.schema.ts.\n"
+            f"2. Handle type declarations and generics properly. Ensure all types are correctly defined in {target_language}.\n"
+            f"3. Adjust syntax differences between {source_language} and {target_language}. Ensure correct usage of language-specific features.\n"
+            f"4. Rename 'delete' to 'deleteUser' where applicable.\n"
+            f"5. Use `module.exports =` instead of a function name in paginationAndSort.ts.\n"
+            f"6. Ensure that the format and naming conventions of the migrated code are as consistent as possible with the original code.\n"
+        )
+
 
         # Log the prompt used for migration
         log_file.write(f'{datetime.now()}: Using prompt: {prompt}\n')
