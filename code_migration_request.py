@@ -251,7 +251,7 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
             f"3. Adjust syntax differences between {source_language} and {target_language}. Ensure correct usage of language-specific features.\n"
             f"4. Rename 'delete' to 'deleteUser' where applicable.\n"
             f"5. Use `module.exports =` instead of a function name in paginationAndSort.ts.\n"
-            f"6. Ensure that the format and naming conventions of the migrated code are as consistent as possible with the original code.\n"
+            f"6. Ensure that the format and naming conventions of the migrated code remain consistent with the original code.\n"
         )
 
 
