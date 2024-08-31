@@ -22,18 +22,17 @@ sonar_host_url = os.getenv('SONAR_HOST_URL')
 # File extension mappings for target languages
 language_extensions = {
     'kotlin': 'kt',
-    'python': 'py',
     'typescript': 'ts',
 }
 
 # List of source directories to migrate from
 source_directories = [
-    "C:/Users/EmmaR/OneDrive/Documents/Pipeline/Data"
+    'C:/Users/EmmaR/OneDrive/Documents/Pipeline/Data'
 ]
 
 # List of models to use for code migration
 models = [
-    # 'VertexAI - PaLM 2',
+    'VertexAI - PaLM 2',
     # 'VertexAI - Gemini Pro',
     # 'VertexAI - Codey',
     # 'OpenAI - GPT-3.5 Turbo',
@@ -41,20 +40,16 @@ models = [
     # 'OpenAI - GPT-4 Turbo',
     # 'Ollama - Llama 3',
     # 'Ollama - CodeGemma',
-    'Ollama - CodeLlama'
+    # 'Ollama - CodeLlama'
 ]
 
-# Maximum retries for migration and testing processes
-MAX_RETRIES = 3
-
-# Function to extract migrated code and extra content based on regex patterns
-def extract_code_and_extra_content(response_json):
+# Function to extract migrated code based on regex patterns
+def extract_code(response_json):
     migrated_code = response_json.get('migrated_code', '')
-    extra_content = response_json.get('extra_content', '')
 
     if not target_language:
-        # When no target language is specified, ignore content before '''
-        code_block_match = re.search(r"'''([\s\S]*?)'''", migrated_code, re.IGNORECASE)
+        # When no target language is specified, ignore content before and after ```
+        code_block_match = re.search(r'```([\s\S]*?)```', migrated_code, re.IGNORECASE)
         if code_block_match:
             migrated_code = code_block_match.group(1).strip()
         else:
@@ -62,8 +57,8 @@ def extract_code_and_extra_content(response_json):
             if code_block_match:
                 migrated_code = code_block_match.group(1).strip()
     else:
-        # Handle specific case for target_language
-        code_block_match = re.search(rf"'''{target_language}\n([\s\S]*?)'''", migrated_code, re.IGNORECASE)
+        # When target language is specified, ignore content before and after ```
+        code_block_match = re.search(rf'```{target_language}\n([\s\S]*?)```', migrated_code, re.IGNORECASE)
         if code_block_match:
             migrated_code = code_block_match.group(1).strip()
         else:
@@ -71,12 +66,11 @@ def extract_code_and_extra_content(response_json):
             if code_block_match:
                 migrated_code = code_block_match.group(1).strip()
 
-    return migrated_code, extra_content
+    return migrated_code
 
-# Function to extract code with indentation-based approach
-def extract_code_and_extra_content_indentation(response_json):
+# Function to extract migrated code with indentation-based approach
+def extract_code_indentation(response_json):
     migrated_code = ''
-    extra_content = ''
 
     if 'migrated_code' in response_json:
         migrated_code_block = response_json['migrated_code'].strip()
@@ -84,21 +78,19 @@ def extract_code_and_extra_content_indentation(response_json):
         if code_match:
             migrated_code = code_match.group(1).strip()
 
-    return migrated_code, extra_content
+    return migrated_code
 
 # Combine extraction results from different methods
 def extract_code_combined(response_json):
-    migrated_code_regex, extra_content_regex = extract_code_and_extra_content(response_json)
+    migrated_code_regex = extract_code(response_json)
 
     if not migrated_code_regex:
-        migrated_code_indentation, extra_content_indentation = extract_code_and_extra_content_indentation(response_json)
+        migrated_code_indentation = extract_code(response_json)
         migrated_code_combined = migrated_code_indentation
-        extra_content_combined = extra_content_indentation
     else:
         migrated_code_combined = migrated_code_regex
-        extra_content_combined = extra_content_regex
 
-    return migrated_code_combined, extra_content_combined
+    return migrated_code_combined
 
 # Map models to the extraction functions
 extraction_functions = {
@@ -135,7 +127,7 @@ def run_sonar_scanner():
 # Function to run tests (based on file extension) after code migration takes place
 def run_tests(file_extension):
     # Define the log file name with timestamp
-    log_filename = f'output/test_report/migration_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+    log_filename = f'output/test_report/migration_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log'
 
     try:
         if file_extension == 'kt':
@@ -206,54 +198,61 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
     
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
-            code_to_convert = file.read()
-
+            code_to_migrate = file.read()
 
         # Simple prompt for Java to Kotlin and JavaScript to TypeScript
-        # prompt = (
-        #     f"Migrate the provided {source_language} code to {target_language}, ensuring that all used imports remain unchanged."
-        # )
-
-        # prompt = (
-        #     f"Migrate the provided code from {source_language} to {target_language}. Ensure that all relevant import statements and require calls use the format `.../.../src/` at the start of the original paths, for example: ../schemas/user.schema.js migrates to ../../src/schemas/user.schema.ts."
-        # )
+        prompt = (
+            f"Migrate the provided {source_language} code to {target_language}."
+        )
 
         # Complex prompt for Java to Kotlin
 
+        # Class Code
         # prompt = (
-        #     "Migrate ALL the provided Java code to Kotlin and keep the functionality the same. Follow these instructions for an error-free migration:\n"
+        #     f"Using prompt: Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
+        #     f"1. Remove the package import from each file for the purposes of this migration.\n"
+        #     f"2. Adjust all other important imports and dependencies from {source_language} to match {target_language}'s syntax and structure.\n"
+        #     f"3. Handle static methods and fields by using {target_language}'s appropriate annotations or constructs to maintain static-like behavior.\n"
+        #     f"4. Adjust access modifiers and collections. Ensure that {source_language}'s access levels (`public`, `protected`, `private`) are correctly translated into {target_language}'s visibility modifiers.\n"
+        #     f"5. Ensure that all mutable properties in {target_language} are declared with `var` instead of `val`.\n"
+        # )
+
+        # App Code
+        # prompt = (
+        #     f"Migrate ALL the provided {source_language} code to {target_language} and keep the functionality the same. Follow these instructions for an error-free migration:\n"
         #     "\n"
-        #     "1. Retain all package imports and adapt other imports from Java to Kotlin's syntax.\n"
-        #     "2. Handle static methods and fields in Kotlin using `@JvmStatic` and `companion object`.\n"
-        #     "4. Use `var` for mutable properties in Kotlin.\n"
-        #     "5. Make all properties and their setters public in Kotlin, regardless of their access level in Java. Ensure that getters and setters do not cause method signature conflicts.\n"
-        #     "6. Ensure that all function calls are correctly translated from Java to Kotlin. Verify that function invocations and variable assignments are correct and that the syntax matches Kotlin’s expectations.\n"
-        #     "7. Verify that all referenced classes, methods, and variables are properly migrated and imported. Ensure that functions are invoked properly and variables are used as expected in the Kotlin code.\n"
-        #     "8. Do not manually define getters and setters. Rely on Kotlin's autogenerated methods to avoid conflicts.\n"
+        #     f"1. Retain all package imports and adapt other imports from {source_language} to {target_language}'s syntax.\n"
+        #     f"2. Handle static methods and fields in {target_language} using `@JvmStatic` and `companion object`.\n"
+        #     f"4. Use `var` for mutable properties in {target_language}.\n"
+        #     f"5. Make all properties and their setters public in {target_language}, regardless of their access level in {source_language}. Ensure that getters and setters do not cause method signature conflicts.\n"
+        #     f"6. Ensure that all function calls are correctly translated from Java to {source_language}. Verify that function invocations and variable assignments are correct and that the syntax matches {source_language}’s expectations.\n"
+        #     f"7. Verify that all referenced classes, methods, and variables are properly migrated and imported. Ensure that functions are invoked properly and variables are used as expected in the {source_language} code.\n"
+        #     f"8. Do not manually define getters and setters. Rely on {source_language}'s autogenerated methods to avoid conflicts.\n"
         #     "\n"
-        #     "Provide clear and correctly formatted Kotlin code, avoiding unresolved references, syntax errors, and incorrect function invocations."
+        #     f"Provide clear and correctly formatted {target_language} code, avoiding unresolved references, syntax errors, and incorrect function invocations."
         # )
 
         # Complex prompts for JavaScript to TypeScript
-
+        
+        # Class Code
         # prompt = (
-        #         f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
-        #         f"1. If they exist, retain all important imports and dependencies from {source_language}. Ensure that all relevant import statements and require calls use the format `.../.../src/` at the start of the original paths, for example: ../schemas/user.schema.js migrates to ../../src/schemas/user.schema.ts.\n"
-        #         f"2. Handle type declarations and generics properly. Ensure all types are correctly defined in {target_language}.\n"
-        #         f"3. Adjust syntax differences between {source_language} and {target_language}. Ensure correct usage of language-specific features.\n"
-        #         f"4. For TypeScript, handle type assertions, generics, and private fields accurately. Replace 'private' keyword with '#' for private fields.\n"
+    #         f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
+    #         f"1. If they exist, retain all important imports and dependencies from {source_language}. Ensure that all relevant import statements and require calls use the format `.../.../src/` at the start of the original paths, for example: ../schemas/user.schema.js migrates to ../../src/schemas/user.schema.ts.\n"
+    #         f"2. Handle type declarations and generics properly. Ensure all types are correctly defined in {target_language}.\n"
+    #         f"3. Adjust syntax differences between {source_language} and {target_language}. Ensure correct usage of language-specific features.\n"
+    #         f"4. For TypeScript, handle type assertions, generics, and private fields accurately. Replace 'private' keyword with '#' for private fields.\n"
         # )
 
-        prompt = (
-            f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
-            f"1. If they exist, retain all important imports and dependencies from {source_language}. Ensure that all relevant import statements and require calls use the format `.../.../src/` at the start of the original paths, for example: ../schemas/user.schema.js migrates to ../../src/schemas/user.schema.ts.\n"
-            f"2. Handle type declarations and generics properly. Ensure all types are correctly defined in {target_language}.\n"
-            f"3. Adjust syntax differences between {source_language} and {target_language}. Ensure correct usage of language-specific features.\n"
-            f"4. Rename 'delete' to 'deleteUser' where applicable.\n"
-            f"5. Use `module.exports =` instead of a function name in paginationAndSort.ts.\n"
-            f"6. Ensure that the format and naming conventions of the migrated code remain consistent with the original code.\n"
-        )
-
+        # App Code
+        # prompt = (
+        #     f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
+        #     f"1. If they exist, retain all important imports and dependencies from {source_language}. Ensure that all relevant import statements and require calls use the format `.../.../src/` at the start of the original paths, for example: ../schemas/user.schema.js migrates to ../../src/schemas/user.schema.ts.\n"
+        #     f"2. Handle type declarations and generics properly. Ensure all types are correctly defined in {target_language}.\n"
+        #     f"3. Adjust syntax differences between {source_language} and {target_language}. Ensure correct usage of language-specific features.\n"
+        #     f"4. Rename 'delete' to 'deleteUser' where applicable.\n"
+        #     f"5. Use `module.exports =` instead of a function name in paginationAndSort.ts.\n"
+        #     f"6. Ensure that the format and naming conventions of the migrated code remain consistent with the original code.\n"
+        # )
 
         # Log the prompt used for migration
         log_file.write(f'{datetime.now()}: Using prompt: {prompt}\n')
@@ -261,7 +260,7 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
         payload = {
             'model': selected_model,
             'prompt': prompt,
-            'code': code_to_convert
+            'code': code_to_migrate
         }
 
         response = requests.post(api_endpoint, json=payload)
@@ -272,15 +271,14 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
             raise ValueError(f'No extraction function found for model: {selected_model}')
 
         response_json = response.json()
-        migrated_code, extra_content = extraction_function(response_json)
+        migrated_code = extraction_function(response_json)
         response_json['migrated_code'] = migrated_code
-        response_json['extra_content'] = extra_content
 
         if migrated_code:
             file_name_without_extension = os.path.splitext(os.path.basename(file_path))[0]
             target_language_extension = language_extensions.get(target_language, 'txt')
 
-            # Compute the last directory name from the source path
+            # Get the name of the last directory name from the source path
             source_directory = os.path.dirname(file_path)
             last_directory_name = os.path.basename(source_directory)
 
@@ -337,12 +335,12 @@ def main():
     start_time = time.time()
 
     # Log file for the entire script execution
-    log_filename = f'output/migration_logs/migration_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+    log_filename = f'output/migration_logs/migration_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log'
     with open(log_filename, 'w', encoding='utf-8') as log_file:
 
         # Migrate all files from each source directory
         for selected_model in models:
-            log_file.write(f"Running model: {selected_model}\n")
+            log_file.write(f'Running model: {selected_model}\n')
             for source_directory in source_directories:
                 migrate_files_from_directory(source_directory, selected_model, extraction_functions, log_file)
 
@@ -351,29 +349,29 @@ def main():
         
         # Run tests after all migrations are complete
         if file_extension:
-            log_file.write("\nRunning tests...\n")
+            log_file.write('\nRunning tests...\n')
             if run_tests(file_extension):
-                log_file.write("All tests passed successfully.\n")
+                log_file.write('All tests passed successfully.\n')
             else:
-                log_file.write("Some tests failed. Check the test results for details.\n")
+                log_file.write('Some tests failed. Check the test results for details.\n')
         
         # Run SonarQube analysis
-        log_file.write("\nRunning SonarQube analysis...\n")
+        log_file.write('\nRunning SonarQube analysis...\n')
         sonar_result = run_sonar_scanner()
         log_file.write(sonar_result + '\n')
 
         end_time = time.time()
         total_time_minutes = (end_time - start_time) / 60.0
 
-        log_file.write("\nModel execution times:\n")
+        log_file.write('\nModel execution times:\n')
         for model, execution_time in model_times.items():
             if execution_time < 60:
-                log_file.write(f"{model}: {execution_time:.2f} seconds\n")
+                log_file.write(f'{model}: {execution_time:.2f} seconds\n')
             else:
-                log_file.write(f"{model}: {execution_time / 60:.2f} minutes\n")
+                log_file.write(f'{model}: {execution_time / 60:.2f} minutes\n')
 
-        log_file.write(f"Total number of requests processed: {total_requests}\n")
-        log_file.write(f"Total execution time: {total_time_minutes:.2f} minutes\n")
+        log_file.write(f'Total number of requests processed: {total_requests}\n')
+        log_file.write(f'Total execution time: {total_time_minutes:.2f} minutes\n')
 
 if __name__ == "__main__":
     main()
