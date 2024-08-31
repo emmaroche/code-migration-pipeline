@@ -1,15 +1,15 @@
 # Code Migration Pipeline
 
-This repository contains the code for my dissertation's Code Migration Pipeline. The pipeline facilitates the migration of code using generative AI / large language models provided by OpenAI, VertexAI and Ollama.
+This repository contains the code for my dissertation's Code Migration Pipeline. The pipeline facilitates the migration of code using generative AI.
 
 ## Current Features
 
-- **Code Migration**: Facilitates migration of Javascript to TypeScript and Java to Kotlin.
+- **Code Migration**: Facilitates migration of Java to Kotlin and Javascript to TypeScript.
 
-- **Model Integration**: Incorporates AI models developed by OpenAI, VertexAI, and Ollama (e.g., GPT-3.5 Turbo, Gemini Pro, Llama 3, etc.)
+- **Model Integration**: Incorporates AI models developed by OpenAI, Google, and Meta (e.g., GPT-3.5 Turbo, Gemini Pro, Llama 3, etc.)
 
-- **API Endpoint**: Facilitates access to the code migration functionality through a model-agnosti API (code_migration_api.py). Running the code_migration_request.py file, which contains the code to be migrated along with the desired model and migration prompt, sends a POST request to the API.
+- **API Endpoint**: The code_migration_api.py file sets up a Flask-based API for code migration tasks. Running the code_migration_request.py script sends a POST request to this Flask endpoint, including the code to be migrated, the selected AI model, and the migration prompt. 
 
 ## Contributors
 
-- [Emma Roche](https://github.com/emmaroche) - Main Developer
+- [Emma Roche](https://github.com/emmaroche) - Developer
