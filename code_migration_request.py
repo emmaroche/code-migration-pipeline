@@ -209,7 +209,7 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
 
         # Class Code
         # prompt = (
-        #     f"Using prompt: Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
+        #     f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
         #     f"1. Remove the package import from each file for the purposes of this migration.\n"
         #     f"2. Adjust all other important imports and dependencies from {source_language} to match {target_language}'s syntax and structure.\n"
         #     f"3. Handle static methods and fields by using {target_language}'s appropriate annotations or constructs to maintain static-like behavior.\n"
@@ -237,7 +237,7 @@ def migrate_code(file_path, selected_model, extraction_functions, log_file):
         # Class Code
         # prompt = (
     #         f"Migrate the provided {source_language} code to {target_language}. Follow these instructions for an error-free migration:\n"
-    #         f"1. If they exist, retain all important imports and dependencies from {source_language}. Ensure that all relevant import statements and require calls use the format `.../.../src/` at the start of the original paths, for example: ../schemas/user.schema.js migrates to ../../src/schemas/user.schema.ts.\n"
+    #         f"1. If they exist, retain all important imports and dependencies from {source_language}. 
     #         f"2. Handle type declarations and generics properly. Ensure all types are correctly defined in {target_language}.\n"
     #         f"3. Adjust syntax differences between {source_language} and {target_language}. Ensure correct usage of language-specific features.\n"
     #         f"4. For TypeScript, handle type assertions, generics, and private fields accurately. Replace 'private' keyword with '#' for private fields.\n"
